@@ -1,17 +1,25 @@
 from datetime import datetime, timedelta
+import threading
 import time
 
 
 class CronTab(object):
-    def __init__(self, *events):
-        self.events = events
+
+    def __init__(self, interval, eventos = []):
+        self.events = eventos
+        self.interval = interval
+        print(self.interval)
+        thread = threading.Thread(target=self.run, args=())
+        thread.daemon = True  # Daemonize thread
+        thread.start()  # Start the execution
+
+    def add_event(self, event):
+        self.events.append(event)
+
 
     def run(self):
-        t = datetime(*datetime.now().timetuple()[:5])
-        while 1:
+        while True:
+            # Do something
             for e in self.events:
-                e.check(t)
-
-            t += timedelta(minutes=1)
-            while datetime.now() < t:
-                time.sleep((t - datetime.now()).seconds)
+                e.iniciar()
+            time.sleep(self.interval)

@@ -18,9 +18,9 @@ import pickle
 import string
 from multiprocessing import Pool
 
+
 # A class for the MapReduce framwork
 class MapReduce(object):
-
     def __init__(self, m, r, path):
         self.maptask = m
         self.reducetask = r
@@ -46,10 +46,9 @@ class MapReduce(object):
             if (c in string.whitespace) and (i > chunk * m):
                 f.close()
                 m += 1
-                f = open("#split-%s-%s" % (self.path, m-1), "w+")
+                f = open("#split-%s-%s" % (self.path, m - 1), "w+")
                 f.write(str(i) + "\n")
         f.close()
-            
 
     # Maps value into into a list of (key, value) pairs
     # To be defined by user of class
@@ -71,8 +70,8 @@ class MapReduce(object):
     # since each partition has been sorted by key.
     def Merge(self):
         out = []
-        for r in xrange(0, self.reducetask):
-            f = open("#reduce-%s-%d" % (self.path, r), "r")
+        for r in range(0, self.reducetask):
+            f = open("#reduce-%s-%d" % (self.path, r), "rb")
             out = out + pickle.load(f)
             f.close()
             os.unlink("#reduce-%s-%d" % (self.path, r))
@@ -88,8 +87,8 @@ class MapReduce(object):
         os.unlink("#split-%s-%s" % (self.path, i))
         keyvaluelist = self.Map(keyvalue, value)
         for r in range(0, self.reducetask):
-            # print ("map", i, "#map-%s-%s-%d" % (self.path, i, r))
-            f = open("#map-%s-%s-%d" % (self.path, i, r), "w+")
+            # print "map", i, "#map-%s-%s-%d" % (self.path, i, r)
+            f = open("#map-%s-%s-%d" % (self.path, i, r), "wb+")
             itemlist = [item for item in keyvaluelist if self.Partition(item) == r]
             pickle.dump(itemlist, f)
             f.close()
@@ -100,11 +99,11 @@ class MapReduce(object):
         keys = {}
         out = []
         for m in range(0, self.maptask):
-            # print ("reduce", i, "#map-%s-%s-%d" % (self.path, m, i))
-            f = open("#map-%s-%s-%d" % (self.path, m, i), "r")
+            # print "reduce", i, "#map-%s-%s-%d" % (self.path, m, i)
+            f = open("#map-%s-%s-%d" % (self.path, m, i), "rb")
             itemlist = pickle.load(f)
             for item in itemlist:
-                if keys.has_key(item[0]):
+                if item[0] in keys:
                     keys[item[0]].append(item)
                 else:
                     keys[item[0]] = [item]
@@ -112,22 +111,22 @@ class MapReduce(object):
             os.unlink("#map-%s-%s-%d" % (self.path, m, i))
         for k in sorted(keys.keys()):
             out.append(self.Reduce(k, keys[k]))
-        f = open("#reduce-%s-%d" % (self.path, i), "w+")
+        f = open("#reduce-%s-%d" % (self.path, i), "wb+")
         pickle.dump(out, f)
         f.close()
         return i
 
     # The master.
     def run(self):
-        pool = Pool(processes=max(self.maptask, self.reducetask),)
+        pool = Pool(processes=max(self.maptask, self.reducetask), )
         regions = pool.map(self.doMap, range(0, self.maptask))
         partitions = pool.map(self.doReduce, range(0, self.reducetask))
 
+
 # An instance of the MapReduce framework. It performs word count on title-cased words.
 class WordCount(MapReduce):
-
     def __init__(self, maptask, reducetask, path):
-        MapReduce.__init__(self,  maptask, reducetask, path)
+        MapReduce.__init__(self, maptask, reducetask, path)
 
     # Produce a (key, value) pair for each title word in value
     def Map(self, keyvalue, value):
@@ -143,12 +142,13 @@ class WordCount(MapReduce):
                 i += 1
             w = value[start:i]
             if start < i and w.istitle():
-                results.append ((w.lower(), 1))
+                results.append((w.lower(), 1))
         return results
 
-    # Reduce [(key,value), ...]) 
+    # Reduce [(key,value), ...])
     def Reduce(self, key, keyvalues):
         return (key, sum(pair[1] for pair in keyvalues))
+
 
 # Python doesn't pickle method instance by default, so here you go:
 def _pickle_method(method):
@@ -156,6 +156,7 @@ def _pickle_method(method):
     obj = method.im_self
     cls = method.im_class
     return _unpickle_method, (func_name, obj, cls)
+
 
 def _unpickle_method(func_name, obj, cls):
     for cls in cls.mro():
@@ -166,26 +167,30 @@ def _unpickle_method(func_name, obj, cls):
         else:
             break
     return func.__get__(obj, cls)
-import copy_reg
+
+
+import copyreg
 import types
-copy_reg.pickle(types.MethodType, _pickle_method, _unpickle_method)
+
+from six.moves import range
+
+copyreg.pickle(types.MethodType, _pickle_method, _unpickle_method)
 
 # Run WordCount instance
 if __name__ == '__main__':
-  if (len(sys.argv) != 2):
-    print ("Program requires path to file for reading!")
-    sys.exit(1)
+    if (len(sys.argv) != 2):
+        print("Program requires path to file for reading!")
+        sys.exit(1)
 
-  # Create a WordCount MapReduce program
-  wc = WordCount(4, 2, sys.argv[1])
-  # Run it
-  wc.run()
-  # Merge out of Reduce tasks:
-  out = wc.Merge()
-  # Sort by word count:
-  out = sorted(out, key=lambda pair: pair[1], reverse=True)
-  # Print top 20:
-  print ("WordCount:")
-  for pair in out[0:20]:
-      print (pair[0], pair[1])
-
+    # Create a WordCount MapReduce program
+    wc = WordCount(4, 2, sys.argv[1])
+    # Run it
+    wc.run()
+    # Merge out of Reduce tasks:
+    out = wc.Merge()
+    # Sort by word count:
+    out = sorted(out, key=lambda pair: pair[1], reverse=True)
+    # Print top 20:
+    print("WordCount:")
+    for pair in out[0:20]:
+        print(pair[0], pair[1])

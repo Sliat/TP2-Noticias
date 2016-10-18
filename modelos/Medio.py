@@ -1,4 +1,3 @@
-
 '''
 
     clase con los metodos que indican como extraer de cada medio para convertirlo en el xml fuente del indice invertido
@@ -8,16 +7,17 @@
 
 '''
 
-class Medios(object):
+
+class Medio(object):
 
     def extraer_telam(self):
-        pass
+        print("extraigo de telam")
 
     def extraer_clarin(self):
-        pass
+        print("extraigo de clarin")
 
     def extraer_lanacion(self):
-        pass
+        print("extraigo de la nacion")
 
     def extraer_bbc(self):
-        pass
+        print("extraigo de bbc")
