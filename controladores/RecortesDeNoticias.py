@@ -26,7 +26,17 @@ class RecortesDeNoticias(object):
 
         crontab = CronTab(intervalo , eventos)
 
+        # op = 1 significa titulos, op = 2 significa cuerpos
+        # lugar : categorias y medios
+    def ranking(self, op, lugar):
+        pass
 
+    def cantidad(self, inicio,final, lugar):
+        pass
+
+        #consulta : lista de tuplas de palabras y operaciones
+    def booleana(self, consulta):
+        pass
 
 if __name__ == "__main__":
     #Testeamos la extraccion de noticias
