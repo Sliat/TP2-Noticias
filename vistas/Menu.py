@@ -7,6 +7,7 @@ class Menu(object):
         self.terminar = False
         self.nombre = "Recortes de noticias"
         self.controlador = controladores.RecortesDeNoticias.RecortesDeNoticias()
+        self.controlador.extraer_noticias()
         self.operaciones = {
             1: "Ranking de palabras mas mencionadas",
             2: "Cantidad de noticias en un intervalo",

@@ -6,8 +6,9 @@ rss_sources = {
             "politica"  : "http://www.telam.com.ar/rss2/politica.xml",
             "sociedad"  : "http://www.telam.com.ar/rss2/sociedad.xml",
             "economia"  : "http://www.telam.com.ar/rss2/economia.xml",
-            "mundo"     : "http://www.telam.com.ar/rss2/mundo.xml"
-        }
+            "internacional"     : "http://www.telam.com.ar/rss2/internacional.xml"
+        },
+        'feed':'rss',
     },
 
     "clarin":{
@@ -18,18 +19,20 @@ rss_sources = {
             "sociedad"  : "http://www.clarin.com/rss/sociedad/",
             "economia"  : "http://www.clarin.com/rss/ieco/",
             "mundo"     : "http://www.clarin.com/rss/mundo/"
-        }
+        },
+        'feed':'rss',
     },
 
-    "bbc":{
-        'nombre': "BBC en Español",
+    "lavoz":{
+        'nombre': "La voz del interior",
         'secciones':{
             "ultimas"       : "http://www.bbc.co.uk/mundo/ultimas_noticias/index.xml",
             "america-latina": "http://www.bbc.co.uk/mundo/temas/america_latina/index.xml",
             "cultura"       : "http://www.bbc.co.uk/mundo/temas/cultura/index.xml",
             "economia"      : "http://www.bbc.co.uk/mundo/temas/economia/index.xml",
             "mundo"         : "http://www.bbc.co.uk/mundo/temas/internacional/index.xml"
-        }
+        },
+        'feed':'rss',
     },
 
     "lanacion": {
@@ -40,7 +43,8 @@ rss_sources = {
             "sociedad"  : "http://contenidos.lanacion.com.ar/herramientas/rss/categoria_id=7773 ",
             "economia"  : "http://contenidos.lanacion.com.ar/herramientas/rss/categoria_id=272 ",
             "mundo"     : "http://contenidos.lanacion.com.ar/herramientas/rss/categoria_id=7 "
-        }
+        },
+        'feed':'atom',
     }
 }
 

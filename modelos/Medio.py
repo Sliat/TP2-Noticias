@@ -30,13 +30,20 @@ class Medio(object):
                     raise
 
     def extraer_telam(self):
-        telam_rss = sources.rss_sources["telam"]["secciones"]
-        for id,url_seccion in telam_rss.items():
-            tree = etree.parse(self.extraer_rss(url_seccion))
-            print(tree)
-            exit()
+        parser = etree.XMLParser(remove_blank_text=True , remove_comments=True)
+        telam_rss_secciones = sources.rss_sources["telam"]["secciones"]
+        medio_xml = self.get_medio_xml("telam")
+        root = medio_xml.getroot()
 
+        for idseccion , url in sorted(telam_rss_secciones.items()):
+            print("extract from ", idseccion ,url)
+            seccion_xml = etree.XML(self.extraer_rss(url), parser)
+            print(seccion_xml.findall("./channel/title")[0].text)
+            noticias = seccion_xml.find('./channel')
+            for noticia in noticias.findall('item'):
+               self.add_to_medio_xml(noticia, "telam", idseccion , root)
 
+        self.guardar_medio_xml("telam" , root)
 
     def extraer_clarin(self):
         print("extraigo de clarin")
@@ -68,7 +75,53 @@ class Medio(object):
 
         doc.write(archivo_xml, pretty_print=True, xml_declaration=True, encoding='UTF-16')
 
+    def guardar_medio_xml(self , idmedio, root):
+
+        archivo_xml = os.path.join(self.sources_path, idmedio + ".xml")
+
+        doc = etree.ElementTree(root)
+        doc.write(archivo_xml, pretty_print=True, xml_declaration=True, encoding='UTF-16')
+
+
+
+    def get_medio_xml(self , idmedio):
+        medio_xml = os.path.join(self.sources_path, idmedio + ".xml")
+        parser = etree.XMLParser(remove_blank_text=True)
+        return etree.parse(medio_xml, parser)
+
+    def get_next_id(self, medio , seccion):
+        medio_xml = self.get_medio_xml(medio)
+        root = medio_xml.getroot()
+        print(root)
+        path = "seccion[@name='"+seccion+"']/noticia"
+        print(path)
+        #noticias = root.find()
+
+        #print(noticias)
+        return 1
+
+    def add_to_medio_xml(self , item , medio , seccion , root, feed='rss'):
+
+        seccion = root.find("seccion[@name='"+seccion+"']")
+
+        attribs = {'id':'aca', 'url':item.find('link').text}
+        noticia = etree.Element('noticia' , attrib=attribs)
+
+        titulo = etree.SubElement(noticia , 'titulo')
+        titulo.text = item.find('title').text
+
+        descripcion = etree.SubElement(noticia , 'descripcion')
+        descripcion.text = item.find('description').text
+
+        fecha= etree.SubElement(noticia , 'fecha')
+        fecha.text = item.find('pubDate').text
+
+        seccion.append(noticia)
+
+
+
+
 
 if __name__ == "__main__":
     medios = Medio()
-    #medios.extraer_telam()
+    medios.extraer_telam()
