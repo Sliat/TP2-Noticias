@@ -4,9 +4,7 @@ import os
 
 class Menu(object):
     def __init__(self):
-        # El menu se inicializa con el flag en terminar como False
         self.terminar = False
-        # lo cree como atributo para que cuando eligamos el nombre sepamos en todas las posiciones donde cambiarlo
         self.nombre = "Recortes de noticias"
         self.controlador = controladores.RecortesDeNoticias.RecortesDeNoticias()
         self.operaciones = {
@@ -26,16 +24,15 @@ class Menu(object):
     def elegir_operacion(self):
         """PREGUNTA AL USUARIO QUE FUNCIONALIDAD REQUIERE"""
         try:
-
             titulo = self.nombre + " - Operaciones Disponibles"
-            op = int(self.seleccion_menu(titulo, self.operaciones, "operación"))
+            op = int(self.seleccion_simple(titulo, self.operaciones, "operación"))
             print("-" * 70)
             print("\nOperacion seleccionada:", self.operaciones[op], "\n")
             self.menus_disponibles[op]()
         except:
             print("Ocurrio un error en la seleccion de la operación")
 
-    def seleccion_menu(self, titulo, opciones, texto):
+    def seleccion_simple(self, titulo, opciones, texto):
         """
         Menu de seleccion de opciones
         titulo : string con el titulo de la seleccion
@@ -63,19 +60,16 @@ class Menu(object):
     def ranking_n_palabras(self):
         titulo = self.nombre + " - Ranking de palabras encontradas en"
         opciones = {1: "Titulos", 2: "Cuerpos"}
-        op = int(self.seleccion_menu(titulo, opciones, "opcion"))
+        op = int(self.seleccion_simple(titulo, opciones, "opcion"))
         lugar = self.obtener_lugar()
         self.controlador.ranking(op, lugar)
 
     def cantidad_de_noticias(self):
-        inicio = self.obtener_fecha("inicio")
-        final = self.obtener_fecha("final")
-        while self.validar_fechas(inicio, final):
-            print("Volver a ingresar fechas, la fecha de inicio no puede ser posterior a la final")
-            inicio = self.obtener_fecha("inicio")
-            final = self.obtener_fecha("final")
+        """
+        Incompleto
+        """
         lugar = self.obtener_lugar()
-        self.controlador.cantidad(inicio, final, lugar)
+        # self.controlador.cantidad(intervalo, lugar)
 
     def consulta_booleana(self):
         """
@@ -97,24 +91,40 @@ class Menu(object):
         consulta = []
         palabra = input("Escriba la palabra o frase a buscar")
         booleano = booleano + palabra
-        op = int(self.seleccion_menu(titulo + booleano, opciones, "conector"))
+        op = int(self.seleccion_simple(titulo + booleano, opciones, "conector"))
         consulta.append((palabra, op))
-        while op != 5:
+        while op != len(opciones):
             palabra = input("Escriba la palabra o frase a buscar")
             booleano = "(" + booleano + " " + opciones[op] + " " + palabra + ")"
-            op = int(self.seleccion_menu(titulo + booleano[1:-1], opciones, "conector"))
-            consulta.append((palabra, op))
+            op = int(self.seleccion_simple(titulo + booleano[1:-1], opciones, "conector"))
+            consulta.append([palabra, op])
         self.controlador.booleana(consulta)
 
-    # lugar : categorias y medios
     def obtener_lugar(self):
-        pass
-
-    def obtener_fecha(self, objetivo):
-        pass
-
-    def validar_fechas(self, inicio, final):
-        pass
+        """
+        :return tupla con medio y categoria
+        """
+        titulo_medio = self.nombre + " - Seleccion de medio"
+        opciones_medio = {
+            1: "Todos",
+            2: "Clarin",
+            3: "La Nacion",
+            4: "Telam",
+            5: "BBC",
+            6: " OTRO "
+        }
+        op_medio = int(self.seleccion_simple(titulo_medio, opciones_medio, "medio"))
+        titulo_categoria = self.nombre + " - Seleccion de categoria"
+        opciones_categoria = {
+            1: "Todas",
+            2: "ultimas",
+            3: "politica",
+            4: "sociedad",
+            5: "economia",
+            6: "mundo"
+        }
+        op_categoria = int(self.seleccion_simple(titulo_categoria, opciones_categoria, "categoria"))
+        return op_medio, op_categoria
 
     def clear(self):
         os.system('cls' if os.name == 'nt' else 'clear')
