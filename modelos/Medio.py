@@ -102,22 +102,24 @@ class Medio(object):
 
     def add_to_medio_xml(self , item , medio , seccion , root, feed='rss'):
 
-        seccion = root.find("seccion[@name='"+seccion+"']")
+        url = item.find('link').text
 
-        attribs = {'id':'aca', 'url':item.find('link').text}
-        noticia = etree.Element('noticia' , attrib=attribs)
+        if root.find(".//noticia[@url='"+url+"']")== None :
+            seccion = root.find("seccion[@name='"+seccion+"']")
 
-        titulo = etree.SubElement(noticia , 'titulo')
-        titulo.text = item.find('title').text
+            attribs = {'id':'aca', 'url':item.find('link').text}
+            noticia = etree.Element('noticia' , attrib=attribs)
 
-        descripcion = etree.SubElement(noticia , 'descripcion')
-        descripcion.text = item.find('description').text
+            titulo = etree.SubElement(noticia , 'titulo')
+            titulo.text = item.find('title').text
 
-        fecha= etree.SubElement(noticia , 'fecha')
-        fecha.text = item.find('pubDate').text
+            descripcion = etree.SubElement(noticia , 'descripcion')
+            descripcion.text = item.find('description').text
 
-        seccion.append(noticia)
+            fecha= etree.SubElement(noticia , 'fecha')
+            fecha.text = item.find('pubDate').text
 
+            seccion.append(noticia)
 
 
 
