@@ -1,5 +1,6 @@
 rss_sources = {
     "telam":{
+        'id':1,
         'nombre': "Telam",
         'secciones':{
             "ultimas"   : "http://www.telam.com.ar/rss2/ultimasnoticias.xml",
@@ -12,6 +13,7 @@ rss_sources = {
     },
 
     "clarin":{
+        'id':2,
         'nombre': "Clarin",
         'secciones':{
             "ultimas"   : "http://www.clarin.com/rss/lo-ultimo/",
@@ -24,18 +26,20 @@ rss_sources = {
     },
 
     "lavoz":{
+        'id':3,
         'nombre': "La voz del interior",
         'secciones':{
-            "ultimas"       : "http://www.bbc.co.uk/mundo/ultimas_noticias/index.xml",
-            "america-latina": "http://www.bbc.co.uk/mundo/temas/america_latina/index.xml",
-            "cultura"       : "http://www.bbc.co.uk/mundo/temas/cultura/index.xml",
-            "economia"      : "http://www.bbc.co.uk/mundo/temas/economia/index.xml",
-            "mundo"         : "http://www.bbc.co.uk/mundo/temas/internacional/index.xml"
+            "ultimas"       : "http://www.lavoz.com.ar/rss.xml",
+            "politica"      : "http://www.lavoz.com.ar/taxonomy/term/4/1/feed",
+            "cultura"       : "http://vos.lavoz.com.ar/rss.xml",
+            "economia"      : "http://www.lavoz.com.ar/taxonomy/term/2/1/feed",
+            "mundo"         : "http://www.lavoz.com.ar/taxonomy/term/5/1/feed"
         },
         'feed':'rss',
     },
 
     "lanacion": {
+        'id':4,
         'nombre': "La Nación",
         'secciones': {
             "ultimas"   : "http://contenidos.lanacion.com.ar/herramientas/rss/origen=2 ",
@@ -45,6 +49,18 @@ rss_sources = {
             "mundo"     : "http://contenidos.lanacion.com.ar/herramientas/rss/categoria_id=7 "
         },
         'feed':'atom',
+    },
+    "perfil":{
+        'id':5,
+        'nombre':"Perfil",
+        'secciones':{
+            "ultimas"           : "http://www.perfil.com/rss/ultimomomento.xml",
+            "politica"          : "http://www.perfil.com/rss/politica.xml",
+            "sociedad"          : "http://www.perfil.com/rss/sociedad.xml",
+            "economia"          : "http://www.perfil.com/rss/economia.xml",
+            "internacional"     : "http://www.perfil.com/rss/internacional.xml"
+        },
+        'feed': 'rss'
     }
 }
 
