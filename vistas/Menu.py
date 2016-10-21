@@ -98,7 +98,7 @@ class Menu(object):
             palabra = input("Escriba la palabra o frase a buscar")
             booleano = "(" + booleano + " " + opciones[op] + " " + palabra + ")"
             op = int(self.seleccion_simple(titulo + booleano[1:-1], opciones, "conector"))
-            consulta.append([palabra, op])
+            consulta.append((palabra, op))
         self.controlador.booleana(consulta)
 
     def obtener_lugar(self):
