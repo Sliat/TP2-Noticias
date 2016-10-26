@@ -7,7 +7,7 @@ rss_sources = {
             "politica"  : "http://www.telam.com.ar/rss2/politica.xml",
             "sociedad"  : "http://www.telam.com.ar/rss2/sociedad.xml",
             "economia"  : "http://www.telam.com.ar/rss2/economia.xml",
-            "internacional"     : "http://www.telam.com.ar/rss2/internacional.xml"
+            "mundo"     : "http://www.telam.com.ar/rss2/internacional.xml"
         },
         'feed':'rss',
     },
@@ -31,7 +31,7 @@ rss_sources = {
         'secciones':{
             "ultimas"       : "http://www.lavoz.com.ar/rss.xml",
             "politica"      : "http://www.lavoz.com.ar/taxonomy/term/4/1/feed",
-            "cultura"       : "http://vos.lavoz.com.ar/rss.xml",
+            "sociedad"       : "http://vos.lavoz.com.ar/rss.xml",
             "economia"      : "http://www.lavoz.com.ar/taxonomy/term/2/1/feed",
             "mundo"         : "http://www.lavoz.com.ar/taxonomy/term/5/1/feed"
         },
@@ -58,7 +58,7 @@ rss_sources = {
             "politica"          : "http://www.perfil.com/rss/politica.xml",
             "sociedad"          : "http://www.perfil.com/rss/sociedad.xml",
             "economia"          : "http://www.perfil.com/rss/economia.xml",
-            "internacional"     : "http://www.perfil.com/rss/internacional.xml"
+            "mundo"     : "http://www.perfil.com/rss/internacional.xml"
         },
         'feed': 'rss'
     }
