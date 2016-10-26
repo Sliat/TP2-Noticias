@@ -57,17 +57,17 @@ class Indice:
     def formar_indice(self):
         """Actualiza el indice, en caso de que no exista lo crea"""
         basic_path = os.path.join(os.path.dirname(__file__), "..", "Indice")
-        # try:
-        #    diccionario = json.load(open(os.path.join(basic_path, "Dic.json")))
-        # except:
-        #    diccionario = {"1": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
-        #                   "2": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
-        #                   "3": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
-        #                   "4": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
-        #                   "5": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}}
-        # self.SPIMI(diccionario, basic_path)
-        # json.dump(diccionario, open(os.path.abspath(os.path.join(basic_path, "Dic.json")), "w"))
-        self.merge(basic_path)
+        try:
+            diccionario = json.load(open(os.path.join(basic_path, "Dic.json")))
+        except:
+            diccionario = {"1": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
+                           "2": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
+                           "3": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
+                           "4": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
+                           "5": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}}
+        self.SPIMI(diccionario, basic_path)
+        json.dump(diccionario, open(os.path.abspath(os.path.join(basic_path, "Dic.json")), "w"))
+        self.merge(basic_path, 4)
 
     def SPIMI(self, diccionario, basic_path):
         """
@@ -78,26 +78,28 @@ class Indice:
         """
         for medio in diccionario.keys():
             indice = {}
-            for seccion in diccionario[medio].keys():
+            for seccion in sorted(diccionario[medio].keys()):
                 noticias = self.obtener_noticias((medio, seccion, diccionario[medio]), basic_path)
                 noticias = list(map(
                     lambda x: (self.normalizar_string(x[0]), self.normalizar_string(x[1]), diccionario[medio][seccion]),
                     noticias))
                 for titulo, descripcion, id_noticia in noticias:
                     for word in titulo:
-                        indice.setdefault(word, []).append((medio + seccion + "1" + str(id_noticia)))
+                        indice.setdefault(word, []).append(
+                            (medio + str((int(seccion) * 2) - 2) + '{0:03d}'.format(id_noticia)))
+                for titulo, descripcion, id_noticia in noticias:
                     for word in descripcion:
-                        indice.setdefault(word, []).append((medio + seccion + "2" + str(id_noticia)))
-            sorted_terms = sorted(indice.keys())
+                        indice.setdefault(word, []).append(
+                            (medio + str((int(seccion) * 2) - 1) + '{0:03d}'.format(id_noticia)))
             temp = open(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'wt')
-            temp.write('\n'.join(['%s; %s' % (t, str(indice[t])) for t in sorted_terms]))
+            for termino in sorted(indice.keys()):
+                temp.write(termino + ';' + ''.join([str(x) + ',' for x in indice[termino]])[:-1] + "\n")
             temp.close()
 
     def obtener_noticias(self, posicion, basic_path):
         """
-        Devuelve todas las noticias de un medio y seccion especificas a partir de un id
         :param posicion: tupla con medio, seccion, diccionario con id noticia anterior
-        :return:
+        :return: todas las noticias de un medio y seccion especificas a partir de un id
         """
         tree = etree.parse(os.path.join(basic_path, "..", "sources", self._INDICE_MEDIOS[posicion[0]] + ".xml"),
                            etree.XMLParser(remove_blank_text=True))
@@ -111,8 +113,7 @@ class Indice:
             yield (noticia.xpath("titulo")[0].text, noticia.xpath("descripcion")[0].text)
 
     def normalizar_string(self, str):
-        """Devuelve lista de palabras normalizadas
-        """
+        """ :return: lista de palabras normalizadas"""
         stemmer = SnowballStemmer('spanish')
         str = re.split(r"[0-9_\W]", str)
         words = []
@@ -121,14 +122,24 @@ class Indice:
                 words.append(stemmer.stem(word))
         return words
 
-    def merge(self, basic_path):
+    def merge(self, basic_path, block_size):
+        """
+        Unifica los archivos intermedios creados por SPIMI en un indice comprimido que consiste en un "block storage"
+        con las palabras y una estructura auxiliar con los postings y referencias al "block storage"
+        :param basic_path: path de la carpeta Indice donde se encuentras los archivos
+        :param block_size: tamaño de cada bloque en el "block storage"
+        """
         intermedios = []
         for medio in sorted(self._INDICE_MEDIOS.keys()):
             intermedios.append(open(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'rt'))
-        final = open(os.path.join(basic_path, 'Indice' + '.txt'), 'wt')
         lineas = []
+        block_storage = open(os.path.join(basic_path, "block_storage" + '.txt'), 'wt')
+        estructura_auxiliar = open(os.path.join(basic_path, "estructura_auxiliar" + '.txt'), 'wt')
         for archivo in intermedios:
             lineas.append(archivo.readline().split(";"))
+        indice = 0
+        postings = []
+        salto = 0
         while lineas:
             palabra = lineas[0][0]
             apariciones = []
@@ -140,15 +151,45 @@ class Indice:
                     apariciones.append(x)
             resultado = ""
             for i in apariciones:
-                resultado += lineas[i][1][:-1]
+                resultado += lineas[i][1][:-1] + ","
                 lineas[i] = intermedios[i].readline().split(";")
                 if len(lineas[i][0]) == 0:
                     intermedios[i].close()
-                    del(intermedios[i])
-                    del(lineas[i])
-                    for i in range (0, len(apariciones)):
+                    del (intermedios[i])
+                    del (lineas[i])
+                    for i in range(0, len(apariciones)):
                         apariciones[i] -= 1
-            final.write(palabra + ";" + resultado + "\n")
+            jump = len(palabra)
+            block_storage.write(str(jump) + palabra)
+            postings.append(resultado[:-1])
+            if len(postings) == block_size:
+                estructura_auxiliar.write(str(indice) + "-" + self.comprimir_postings(postings) + ";")
+                postings = []
+                indice += salto
+                salto = 0
+            salto += len(str(jump)) + jump
+        if len(postings) != 0:
+            estructura_auxiliar.write(str(indice) + "-" + self.comprimir_postings(postings) + ";")
+        estructura_auxiliar.close()
+        block_storage.close()
+        for medio in sorted(self._INDICE_MEDIOS.keys()):
+            os.remove(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'))
+
+    def comprimir_postings(self, postings):
+        """
+        :param postings: string con los postings
+        :return: string comprimido con los postings
+        """
+        res = ""
+        for post in postings:
+            elementos = post.split(",")
+            res += elementos[0]
+            for i in range(len(elementos) - 1, 0, -1):
+                elementos[i] = str(int(elementos[i]) - int(elementos[i - 1]))
+            for i in range(1, len(elementos)):
+                res += "+" + elementos[i]
+            res += ","
+        return res[:-1]
 
     def obtener_apariciones(self, palabra):
         """Devuelve un SET con las apariciones de la palabra"""

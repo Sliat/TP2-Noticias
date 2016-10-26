@@ -1,10 +1,11 @@
+import functools
+import time
+
+import modelos.Indice
+from config import rss_sources as sources
 from librerias.CronTab import CronTab
 from librerias.Evento import Evento
 from modelos.Medio import Medio
-from config import rss_sources as sources
-import functools
-import time
-import controladores.Indice
 
 
 class RecortesDeNoticias(object):
@@ -12,7 +13,7 @@ class RecortesDeNoticias(object):
     medio_model = Medio()
 
     def __init__(self):
-        self.indice = controladores.Indice.Indice()
+        self.indice = modelos.Indice.Indice()
 
     def set_intervalo_consulta(self, minutos):
         self._intervalo_consulta = int(minutos * 60)
