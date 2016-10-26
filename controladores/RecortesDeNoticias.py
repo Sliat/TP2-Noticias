@@ -19,17 +19,17 @@ class RecortesDeNoticias(object):
 
     def extraer_noticias(self):
         intervalo = self._intervalo_consulta
-        print("Se extraeran noticias de los medios registrados cada %s minutos" % int(intervalo / 60))
+        #print("Se extraeran noticias de los medios registrados cada %s minutos" % int(intervalo / 60))
         medios = sources.rss_sources
 
         eventos = []
 
-        for id_medio, medio in sorted(medios.items()):
-            funcion = getattr(self.medio_model, 'extraer_' + id_medio)
-            evento = Evento(funcion)
+        for idmedio, medio in sorted(medios.items()):
+            funcion = getattr(self.medio_model, 'extraer_' + medio["feed"])
+            evento = Evento(funcion, idmedio)
             eventos.append(evento)
 
-        crontab = CronTab(intervalo, eventos)
+        CronTab(intervalo, eventos)
 
         # op = 1 significa titulos, op = 2 significa cuerpos
         # lugar : categorias y medios

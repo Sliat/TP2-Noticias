@@ -44,10 +44,10 @@ class Medio(object):
         root = medio_xml.getroot()
 
         for idseccion, url in sorted(telam_rss_secciones.items()):
-            print("extract from ", idseccion, url)
+            #print("extract from ", idseccion, url)
 
             seccion_xml = etree.XML(self.extraer_feed(url), parser)
-            print(seccion_xml.findall("./channel/title")[0].text)
+            #print(seccion_xml.findall("./channel/title")[0].text)
 
             noticias = seccion_xml.find('./channel')
             next_id = self.get_next_id(idmedio, idseccion)
@@ -67,7 +67,7 @@ class Medio(object):
         root = medio_xml.getroot()
 
         for idseccion, url in sorted(medio_rss_secciones.items()):
-            print("extract from ", idseccion, url)
+            #print("extract from ", idseccion, url)
 
             seccion_xml = etree.XML(self.extraer_feed(url), parser)
 
@@ -78,7 +78,7 @@ class Medio(object):
             ns_map = {'ns': ns}
 
             title = seccion_xml.find('ns:title', namespaces=ns_map)
-            print(title.text)
+            #print(title.text)
             next_id = self.get_next_id(idmedio, idseccion)
             for noticia in seccion_xml.findall('ns:entry', namespaces=ns_map):
 

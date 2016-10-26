@@ -8,7 +8,6 @@ class CronTab(object):
     def __init__(self, interval, eventos = []):
         self.events = eventos
         self.interval = interval
-        print(self.interval)
         thread = threading.Thread(target=self.run, args=())
         thread.daemon = True  # Daemonize thread
         thread.start()  # Start the execution

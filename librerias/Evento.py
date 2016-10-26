@@ -7,5 +7,4 @@ class Evento(object):
         self.kwargs = kwargs
 
     def iniciar(self):
-        #self.action(*self.args, **self.kwargs)
-        self.action()
+        self.action(self.args)
