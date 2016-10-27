@@ -262,6 +262,8 @@ class Indice:
         return open(os.path.join(basic_path, "temporal_previo.txt"), 'rt')
 
     def buscar_palabra(self, palabra):
+        """INCOMPLETO
+        """
         palabra = self.normalizar_string(palabra)
         file = open(os.path.join(os.path.dirname(__file__), "..", "Indice", "block_storage.txt"), "r")
         file.close()
@@ -279,5 +281,4 @@ class Indice:
 if __name__ == '__main__':
     Indice().formar_indice()
     # Indice().merge(os.path.join(os.path.dirname(__file__), "..", "Indice"), 4)
-    # Indice().buscar_palabra("Abogado")
     # Indice().descomprimir_indice(os.path.join(os.path.dirname(__file__), "..", "Indice"))
