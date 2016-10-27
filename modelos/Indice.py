@@ -1,3 +1,4 @@
+# -*- coding: 850 -*-
 import os
 import json
 import re
@@ -13,45 +14,45 @@ class Indice:
     _WORD_MIN_LENGTH = 3
     _STOP_WORDS = frozenset(['de', 'la', 'que', 'el', 'en', 'y', 'a', 'los',
                              'del', 'se', 'las', 'por', 'un', 'para', 'con', 'no', 'una', 'su', 'al', 'es',
-                             'lo', 'como', 'm√°s', 'pero', 'sus', 'le', 'ya', 'o', 'fue', 'este', 'ha', 's√≠',
-                             'porque', 'esta', 'son', 'entre', 'est√°', 'cuando', 'muy', 'sin', 'sobre',
-                             'ser', 'tiene', 'tambi√©n', 'me', 'hasta', 'hay', 'donde', 'han', 'quien',
-                             'est√°n', 'estado', 'desde', 'todo', 'nos', 'durante', 'estados', 'todos',
-                             'uno', 'les', 'ni', 'contra', 'otros', 'fueron', 'ese', 'eso', 'hab√≠a',
-                             'ante', 'ellos', 'e', 'esto', 'm√≠', 'antes', 'algunos', 'qu√©', 'unos', 'yo',
-                             'otro', 'otras', 'otra', '√©l', 'tanto', 'esa', 'estos', 'mucho', 'quienes',
+                             'lo', 'como', 'm†s', 'pero', 'sus', 'le', 'ya', 'o', 'fue', 'este', 'ha', 's°',
+                             'porque', 'esta', 'son', 'entre', 'est†', 'cuando', 'muy', 'sin', 'sobre',
+                             'ser', 'tiene', 'tambiÇn', 'me', 'hasta', 'hay', 'donde', 'han', 'quien',
+                             'est†n', 'estado', 'desde', 'todo', 'nos', 'durante', 'estados', 'todos',
+                             'uno', 'les', 'ni', 'contra', 'otros', 'fueron', 'ese', 'eso', 'hab°a',
+                             'ante', 'ellos', 'e', 'esto', 'm°', 'antes', 'algunos', 'quÇ', 'unos', 'yo',
+                             'otro', 'otras', 'otra', 'Çl', 'tanto', 'esa', 'estos', 'mucho', 'quienes',
                              'nada', 'muchos', 'cual', 'sea', 'poco', 'ella', 'estar', 'haber', 'estas',
-                             'estaba', 'estamos', 'algunas', 'algo', 'nosotros', 'mi', 'mis', 't√∫', 'te',
-                             'ti', 'tu', 'tus', 'ellas', 'nosotras', 'vosotros', 'vosotras', 'os', 'm√≠o',
-                             'm√≠a', 'm√≠os', 'm√≠as', 'tuyo', 'tuya', 'tuyos', 'tuyas', 'suyo', 'suya',
+                             'estaba', 'estamos', 'algunas', 'algo', 'nosotros', 'mi', 'mis', 't£', 'te',
+                             'ti', 'tu', 'tus', 'ellas', 'nosotras', 'vosotros', 'vosotras', 'os', 'm°o',
+                             'm°a', 'm°os', 'm°as', 'tuyo', 'tuya', 'tuyos', 'tuyas', 'suyo', 'suya',
                              'suyos', 'suyas', 'nuestro', 'nuestra', 'nuestros', 'nuestras', 'vuestro',
-                             'vuestra', 'vuestros', 'vuestras', 'esos', 'esas', 'estoy', 'est√°s', 'est√°',
-                             'estamos', 'est√°is', 'est√°n', 'est√©', 'est√©s', 'estemos', 'est√©is', 'est√©n',
-                             'estar√©', 'estar√°s', 'estar√°', 'estaremos', 'estar√©is', 'estar√°n', 'estar√≠a',
-                             'estar√≠as', 'estar√≠amos', 'estar√≠ais', 'estar√≠an', 'estaba', 'estabas',
-                             'est√°bamos', 'estabais', 'estaban', 'estuve', 'estuviste', 'estuvo',
+                             'vuestra', 'vuestros', 'vuestras', 'esos', 'esas', 'estoy', 'est†s', 'est†',
+                             'estamos', 'est†is', 'est†n', 'estÇ', 'estÇs', 'estemos', 'estÇis', 'estÇn',
+                             'estarÇ', 'estar†s', 'estar†', 'estaremos', 'estarÇis', 'estar†n', 'estar°a',
+                             'estar°as', 'estar°amos', 'estar°ais', 'estar°an', 'estaba', 'estabas',
+                             'est†bamos', 'estabais', 'estaban', 'estuve', 'estuviste', 'estuvo',
                              'estuvimos', 'estuvisteis', 'estuvieron', 'estuviera', 'estuvieras',
-                             'estuvi√©ramos', 'estuvierais', 'estuvieran', 'estuviese', 'estuvieses',
-                             'estuvi√©semos', 'estuvieseis', 'estuviesen', 'estando', 'estado', 'estada',
-                             'estados', 'estadas', 'estad', 'none', 'he', 'has', 'ha', 'hemos', 'hab√©is', 'han',
-                             'haya', 'hayas', 'hayamos', 'hay√°is', 'hayan', 'habr√©', 'habr√°s', 'habr√°',
-                             'habremos', 'habr√©is', 'habr√°n', 'habr√≠a', 'habr√≠as', 'habr√≠amos', 'habr√≠ais',
-                             'habr√≠an', 'hab√≠a', 'hab√≠as', 'hab√≠amos', 'hab√≠ais', 'hab√≠an', 'hube',
+                             'estuviÇramos', 'estuvierais', 'estuvieran', 'estuviese', 'estuvieses',
+                             'estuviÇsemos', 'estuvieseis', 'estuviesen', 'estando', 'estado', 'estada',
+                             'estados', 'estadas', 'estad', 'none', 'he', 'has', 'ha', 'hemos', 'habÇis', 'han',
+                             'haya', 'hayas', 'hayamos', 'hay†is', 'hayan', 'habrÇ', 'habr†s', 'habr†',
+                             'habremos', 'habrÇis', 'habr†n', 'habr°a', 'habr°as', 'habr°amos', 'habr°ais',
+                             'habr°an', 'hab°a', 'hab°as', 'hab°amos', 'hab°ais', 'hab°an', 'hube',
                              'hubiste', 'hubo', 'hubimos', 'hubisteis', 'hubieron', 'hubiera', 'hubieras',
-                             'hubi√©ramos', 'hubierais', 'hubieran', 'hubiese', 'hubieses', 'hubi√©semos',
+                             'hubiÇramos', 'hubierais', 'hubieran', 'hubiese', 'hubieses', 'hubiÇsemos',
                              'hubieseis', 'hubiesen', 'habiendo', 'habido', 'habida', 'habidos', 'habidas',
-                             'soy', 'eres', 'es', 'somos', 'sois', 'son', 'sea', 'seas', 'seamos', 'se√°is',
-                             'sean', 'ser√©', 'ser√°s', 'ser√°', 'seremos', 'ser√©is', 'ser√°n', 'ser√≠a',
-                             'ser√≠as', 'ser√≠amos', 'ser√≠ais', 'ser√≠an', 'era', 'eras', '√©ramos', 'erais',
+                             'soy', 'eres', 'es', 'somos', 'sois', 'son', 'sea', 'seas', 'seamos', 'se†is',
+                             'sean', 'serÇ', 'ser†s', 'ser†', 'seremos', 'serÇis', 'ser†n', 'ser°a',
+                             'ser°as', 'ser°amos', 'ser°ais', 'ser°an', 'era', 'eras', 'Çramos', 'erais',
                              'eran', 'fui', 'fuiste', 'fue', 'fuimos', 'fuisteis', 'fueron', 'fuera',
-                             'fueras', 'fu√©ramos', 'fuerais', 'fueran', 'fuese', 'fueses', 'fu√©semos',
+                             'fueras', 'fuÇramos', 'fuerais', 'fueran', 'fuese', 'fueses', 'fuÇsemos',
                              'fueseis', 'fuesen', 'siendo', 'sido', 'sed', 'tengo', 'tienes', 'tiene',
-                             'tenemos', 'ten√©is', 'tienen', 'tenga', 'tengas', 'tengamos', 'teng√°is',
-                             'tengan', 'tendr√©', 'tendr√°s', 'tendr√°', 'tendremos', 'tendr√©is', 'tendr√°n',
-                             'tendr√≠a', 'tendr√≠as', 'tendr√≠amos', 'tendr√≠ais', 'tendr√≠an', 'ten√≠a',
-                             'ten√≠as', 'ten√≠amos', 'ten√≠ais', 'ten√≠an', 'tuve', 'tuviste', 'tuvo',
-                             'tuvimos', 'tuvisteis', 'tuvieron', 'tuviera', 'tuvieras', 'tuvi√©ramos',
-                             'tuvierais', 'tuvieran', 'tuviese', 'tuvieses', 'tuvi√©semos', 'tuvieseis',
+                             'tenemos', 'tenÇis', 'tienen', 'tenga', 'tengas', 'tengamos', 'teng†is',
+                             'tengan', 'tendrÇ', 'tendr†s', 'tendr†', 'tendremos', 'tendrÇis', 'tendr†n',
+                             'tendr°a', 'tendr°as', 'tendr°amos', 'tendr°ais', 'tendr°an', 'ten°a',
+                             'ten°as', 'ten°amos', 'ten°ais', 'ten°an', 'tuve', 'tuviste', 'tuvo',
+                             'tuvimos', 'tuvisteis', 'tuvieron', 'tuviera', 'tuvieras', 'tuviÇramos',
+                             'tuvierais', 'tuvieran', 'tuviese', 'tuvieses', 'tuviÇsemos', 'tuvieseis',
                              'tuviesen', 'teniendo', 'tenido', 'tenida', 'tenidos', 'tenidas', 'tened', ''])
 
     def formar_indice(self):
@@ -129,7 +130,7 @@ class Indice:
         Unifica los archivos intermedios creados por SPIMI en un indice comprimido que consiste en un "block storage"
         con las palabras y una estructura auxiliar con los postings y referencias al "block storage"
         :param basic_path: path de la carpeta Indice donde se encuentras los archivos
-        :param block_size: tama√±o de cada bloque en el "block storage"
+        :param block_size: tama§o de cada bloque en el "block storage"
         """
         intermedios = []
         for medio in sorted(self._INDICE_MEDIOS.keys()):
@@ -149,7 +150,7 @@ class Indice:
                 actualizacion = True
             except:
                 pass
-        block_storage = open(os.path.join(basic_path, "block_storage.txt"), 'wt')
+        block_storage = open(os.path.join(basic_path, "block_storage.txt"), 'wt' , encoding='ISO-8859-1')
         estructura_auxiliar = open(os.path.join(basic_path, "estructura_auxiliar.txt"), 'wt')
         postings_list = open(os.path.join(basic_path, "postings_list.txt"), 'wt')
         indice_block = 0
@@ -221,7 +222,7 @@ class Indice:
         return res, pos_str[:-1]
 
     def descomprimir_indice(self, basic_path):
-        block_storage = open(os.path.join(basic_path, "block_storage.txt"), 'rt')
+        block_storage = open(os.path.join(basic_path, "block_storage.txt"), 'rt' , encoding='ISO-8859-1')
         postings_list = open(os.path.join(basic_path, "postings_list.txt"), 'rt')
         temporal_previo = open(os.path.join(basic_path, "temporal_previo.txt"), 'wt')
         for block in open(os.path.join(basic_path, "estructura_auxiliar.txt"), 'rt').read()[:-1].split(";"):
@@ -281,4 +282,4 @@ class Indice:
 if __name__ == '__main__':
     Indice().formar_indice()
     # Indice().merge(os.path.join(os.path.dirname(__file__), "..", "Indice"), 4)
-    # Indice().descomprimir_indice(os.path.join(os.path.dirname(__file__), "..", "Indice"))
+    Indice().descomprimir_indice(os.path.join(os.path.dirname(__file__), "..", "Indice"))
