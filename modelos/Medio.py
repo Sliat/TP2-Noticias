@@ -25,9 +25,9 @@ class Medio(object):
                 archivo_xml = os.path.join(self.sources_path, idmedio+".xml")
                 if not os.path.isfile(archivo_xml):
                    self.create_medio_xml(idmedio , archivo_xml)
-            except OSError as exception:
-                if exception.errno != errno.EEXIST:
-                    raise
+            except OSError:
+                print("Hubo un problema en los archivos xml de la extracción de noticias")
+
 
     def extraer_noticias_medios(self):
         for idmedio, medio in sorted(sources.rss_sources.items()):
