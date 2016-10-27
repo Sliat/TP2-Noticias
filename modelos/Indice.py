@@ -133,13 +133,16 @@ class Indice:
         for medio in sorted(self._INDICE_MEDIOS.keys()):
             intermedios.append(open(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'rt'))
         lineas = []
+        final = open(os.path.join(basic_path, "Indice" + '.txt'), 'wt')
         block_storage = open(os.path.join(basic_path, "block_storage" + '.txt'), 'wt')
         estructura_auxiliar = open(os.path.join(basic_path, "estructura_auxiliar" + '.txt'), 'wt')
+        postings_list = open(os.path.join(basic_path, "postings_list" + '.txt'), 'wt')
         for archivo in intermedios:
             lineas.append(archivo.readline().split(";"))
-        indice = 0
+        indice_block = 1
+        indice_postings = 1
         postings = []
-        salto = 0
+        salto_block = 0
         while lineas:
             palabra = lineas[0][0]
             apariciones = []
@@ -159,23 +162,30 @@ class Indice:
                     del (lineas[i])
                     for i in range(0, len(apariciones)):
                         apariciones[i] -= 1
-            jump = len(palabra)
-            block_storage.write(str(jump) + palabra)
+            final.write(palabra + ";" + resultado + "\n")
+            block_storage.write(str(len(palabra)) + palabra)
             postings.append(resultado[:-1])
+            salto_block += len(str(len(palabra))) + len(palabra)
             if len(postings) == block_size:
-                estructura_auxiliar.write(str(indice) + "-" + self.comprimir_postings(postings) + ";")
+                post_compr = self.comprimir_postings(postings, indice_postings)
+                postings_list.write(post_compr[0])
+                estructura_auxiliar.write(str(indice_block) + "-" + post_compr[1] + ";")
+                indice_postings += len(post_compr[0])
                 postings = []
-                indice += salto
-                salto = 0
-            salto += len(str(jump)) + jump
+                indice_block += salto_block
+                salto_block = 0
         if len(postings) != 0:
-            estructura_auxiliar.write(str(indice) + "-" + self.comprimir_postings(postings) + ";")
+            post_compr = self.comprimir_postings(postings, indice_postings)
+            postings_list.write(post_compr[1])
+            estructura_auxiliar.write(str(indice_block) + "-" + post_compr[0] + ";")
         estructura_auxiliar.close()
+        postings_list.close()
         block_storage.close()
-        for medio in sorted(self._INDICE_MEDIOS.keys()):
-            os.remove(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'))
+        final.close()
+        # for medio in sorted(self._INDICE_MEDIOS.keys()):
+        #    os.remove(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'))
 
-    def comprimir_postings(self, postings):
+    def comprimir_postings(self, postings, ref):
         """
         :param postings: string con los postings
         :return: string comprimido con los postings
@@ -189,7 +199,19 @@ class Indice:
             for i in range(1, len(elementos)):
                 res += "+" + elementos[i]
             res += ","
-        return res[:-1]
+        posiciones = []
+        for x in res[:-1].split(","):
+            posiciones.append(ref)
+            ref += len(x) + 1
+        pos_str = ""
+        for i in range(0, len(posiciones)):
+            pos_str += str(posiciones[i]) + ","
+        return res[:-1], pos_str[:-1]
+
+    def buscar_palabra(self, palabra):
+        palabra = self.normalizar_string(palabra)
+        file = open(os.path.join(os.path.dirname(__file__), "..", "Indice", "block_storage.txt"), "r")
+        file.close()
 
     def obtener_apariciones(self, palabra):
         """Devuelve un SET con las apariciones de la palabra"""
@@ -202,4 +224,6 @@ class Indice:
 
 # Test creacion-actualizacion indice
 if __name__ == '__main__':
-    Indice().formar_indice()
+    # Indice().formar_indice()
+    Indice().merge(os.path.join(os.path.dirname(__file__), "..", "Indice"), 4)
+    # Indice().buscar_palabra("Abogado")
