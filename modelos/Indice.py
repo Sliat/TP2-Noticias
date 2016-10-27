@@ -68,6 +68,8 @@ class Indice:
         self.SPIMI(diccionario, basic_path)
         json.dump(diccionario, open(os.path.abspath(os.path.join(basic_path, "Dic.json")), "w"))
         self.merge(basic_path, 4)
+        for medio in sorted(self._INDICE_MEDIOS.keys()):
+            os.remove(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'))
 
     def SPIMI(self, diccionario, basic_path):
         """
@@ -133,14 +135,25 @@ class Indice:
         for medio in sorted(self._INDICE_MEDIOS.keys()):
             intermedios.append(open(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'rt'))
         lineas = []
-        final = open(os.path.join(basic_path, "Indice" + '.txt'), 'wt')
-        block_storage = open(os.path.join(basic_path, "block_storage" + '.txt'), 'wt')
-        estructura_auxiliar = open(os.path.join(basic_path, "estructura_auxiliar" + '.txt'), 'wt')
-        postings_list = open(os.path.join(basic_path, "postings_list" + '.txt'), 'wt')
         for archivo in intermedios:
-            lineas.append(archivo.readline().split(";"))
-        indice_block = 1
-        indice_postings = 1
+            linea = archivo.readline().split(";")
+            if len(linea[0]) != 0:
+                lineas.append(archivo.readline().split(";"))
+            else:
+                archivo.close()
+        actualizacion = False
+        if lineas:
+            try:
+                intermedios.append(self.descomprimir_indice(basic_path))
+                lineas.append(intermedios[-1].readline().split(";"))
+                actualizacion = True
+            except:
+                pass
+        block_storage = open(os.path.join(basic_path, "block_storage.txt"), 'wt')
+        estructura_auxiliar = open(os.path.join(basic_path, "estructura_auxiliar.txt"), 'wt')
+        postings_list = open(os.path.join(basic_path, "postings_list.txt"), 'wt')
+        indice_block = 0
+        indice_postings = 0
         postings = []
         salto_block = 0
         while lineas:
@@ -162,7 +175,6 @@ class Indice:
                     del (lineas[i])
                     for i in range(0, len(apariciones)):
                         apariciones[i] -= 1
-            final.write(palabra + ";" + resultado + "\n")
             block_storage.write(str(len(palabra)) + palabra)
             postings.append(resultado[:-1])
             salto_block += len(str(len(palabra))) + len(palabra)
@@ -176,14 +188,14 @@ class Indice:
                 salto_block = 0
         if len(postings) != 0:
             post_compr = self.comprimir_postings(postings, indice_postings)
-            postings_list.write(post_compr[1])
-            estructura_auxiliar.write(str(indice_block) + "-" + post_compr[0] + ";")
+            postings_list.write(post_compr[0])
+            estructura_auxiliar.write(str(indice_block) + "-" + post_compr[1] + ";")
         estructura_auxiliar.close()
         postings_list.close()
         block_storage.close()
-        final.close()
-        # for medio in sorted(self._INDICE_MEDIOS.keys()):
-        #    os.remove(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'))
+        if actualizacion:
+            lineas[0].close()
+            os.remove(os.path.join(basic_path, "temporal_previo.txt"))
 
     def comprimir_postings(self, postings, ref):
         """
@@ -202,11 +214,52 @@ class Indice:
         posiciones = []
         for x in res[:-1].split(","):
             posiciones.append(ref)
-            ref += len(x) +1
+            ref += len(x) + 1
         pos_str = ""
         for i in range(0, len(posiciones)):
             pos_str += str(posiciones[i]) + ","
-        return res[:-1], pos_str[:-1]
+        return res, pos_str[:-1]
+
+    def descomprimir_indice(self, basic_path):
+        block_storage = open(os.path.join(basic_path, "block_storage.txt"), 'rt')
+        postings_list = open(os.path.join(basic_path, "postings_list.txt"), 'rt')
+        temporal_previo = open(os.path.join(basic_path, "temporal_previo.txt"), 'wt')
+        for block in open(os.path.join(basic_path, "estructura_auxiliar.txt"), 'rt').read()[:-1].split(";"):
+            indice_palabra = int(block.split("-")[0])
+            for posting in block.split("-")[1].split(","):
+                post_list = ""
+                cont = True
+                postings_list.seek(int(posting))
+                while cont:
+                    temp = postings_list.read(1)
+                    cont = temp != ","
+                    if cont:
+                        post_list += temp
+                post_list = post_list.split("+")
+                for i in range(1, len(post_list)):
+                    post_list[i] = str(int(post_list[i]) + int(post_list[i - 1]))
+                post_str = ""
+                for post in post_list:
+                    post_str += post + ","
+                block_storage.seek(indice_palabra)
+                longitud_palabra = block_storage.read(1)
+                indice_palabra += 1
+                continuar = True
+                while (continuar):
+                    temp = block_storage.read(1)
+                    continuar = temp.isdigit()
+                    if continuar:
+                        longitud_palabra += temp
+                        indice_palabra += 1
+                block_storage.seek(indice_palabra)
+                if len(longitud_palabra) != 0:
+                    palabra = block_storage.read(int(longitud_palabra))
+                    temporal_previo.write(palabra + ";" + post_str + "\n")
+                    indice_palabra += len(palabra)
+        block_storage.close()
+        postings_list.close()
+        temporal_previo.close()
+        return open(os.path.join(basic_path, "temporal_previo.txt"), 'rt')
 
     def buscar_palabra(self, palabra):
         palabra = self.normalizar_string(palabra)
@@ -224,6 +277,7 @@ class Indice:
 
 # Test creacion-actualizacion indice
 if __name__ == '__main__':
-    # Indice().formar_indice()
-    Indice().merge(os.path.join(os.path.dirname(__file__), "..", "Indice"), 4)
+    Indice().formar_indice()
+    # Indice().merge(os.path.join(os.path.dirname(__file__), "..", "Indice"), 4)
     # Indice().buscar_palabra("Abogado")
+    # Indice().descomprimir_indice(os.path.join(os.path.dirname(__file__), "..", "Indice"))
