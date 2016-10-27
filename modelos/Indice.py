@@ -202,7 +202,7 @@ class Indice:
         posiciones = []
         for x in res[:-1].split(","):
             posiciones.append(ref)
-            ref += len(x) + 1
+            ref += len(x) +1
         pos_str = ""
         for i in range(0, len(posiciones)):
             pos_str += str(posiciones[i]) + ","
