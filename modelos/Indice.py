@@ -3,14 +3,13 @@ import json
 import re
 from lxml import etree
 from nltk.stem import SnowballStemmer
-from functools import reduce
 
 
 class Indice:
     _INDICE_MEDIOS = {"1": "telam", "2": "clarin", "3": "lavoz", "4": "lanacion", "5": "perfil"}
     _INDICE_SECCION = {"1": "economia", "2": "mundo", "3": "politica", "4": "sociedad", "5": "ultimas"}
     _INDICE_ELEMENTO = {"1": "titulo", "2": "descripcion"}
-    _WORD_MIN_LENGTH = 3
+    _WORD_MIN_LENGTH = 4
     _STOP_WORDS = frozenset(['de', 'la', 'que', 'el', 'en', 'y', 'a', 'los',
                              'del', 'se', 'las', 'por', 'un', 'para', 'con', 'no', 'una', 'su', 'al', 'es',
                              'lo', 'como', 'más', 'pero', 'sus', 'le', 'ya', 'o', 'fue', 'este', 'ha', 'sí',
@@ -65,13 +64,13 @@ class Indice:
                            "3": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
                            "4": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
                            "5": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}}
-        self.SPIMI(diccionario, basic_path)
+        self.spimi(diccionario, basic_path)
         json.dump(diccionario, open(os.path.abspath(os.path.join(basic_path, "Dic.json")), "w"))
         self.merge(basic_path, 4)
         for medio in sorted(self._INDICE_MEDIOS.keys()):
             os.remove(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'))
 
-    def SPIMI(self, diccionario, basic_path):
+    def spimi(self, diccionario, basic_path):
         """
         SPIMI : Single-pass in-memory indexing
         crea multiples archivos intermedios con termino : postings
@@ -114,13 +113,13 @@ class Indice:
             posicion[2][posicion[1]] += 1
             yield (noticia.xpath("titulo")[0].text, noticia.xpath("descripcion")[0].text)
 
-    def normalizar_string(self, str):
+    def normalizar_string(self, string):
         """ :return: lista de palabras normalizadas"""
         stemmer = SnowballStemmer('spanish')
-        str = re.split(r"[0-9_\W]", str)
+        string = re.split(r"[0-9_\W]", string)
         words = []
-        for word in str:
-            if word != "" and word not in self._STOP_WORDS and len(word) >= self._WORD_MIN_LENGTH:
+        for word in string:
+            if word != "" and word not in self._STOP_WORDS and len(word) > self._WORD_MIN_LENGTH:
                 word = stemmer.stem(word)
                 word = word.replace("ñ", "o@")
                 word = word.replace("ü", "u")
@@ -180,8 +179,8 @@ class Indice:
                     intermedios[i].close()
                     del (intermedios[i])
                     del (lineas[i])
-                    for i in range(0, len(apariciones)):
-                        apariciones[i] -= 1
+                    for j in range(0, len(apariciones)):
+                        apariciones[j] -= 1
             block_storage.write(str(len(palabra)) + palabra)
             postings.append(resultado[:-1])
             salto_block += len(str(len(palabra))) + len(palabra)
@@ -248,36 +247,59 @@ class Indice:
                 post_str = ""
                 for post in post_list:
                     post_str += post + ","
-                block_storage.seek(indice_palabra)
-                longitud_palabra = block_storage.read(1)
-                indice_palabra += 1
-                continuar = True
-                while (continuar):
-                    temp = block_storage.read(1)
-                    continuar = temp.isdigit()
-                    if continuar:
-                        longitud_palabra += temp
-                        indice_palabra += 1
-                block_storage.seek(indice_palabra)
-                if len(longitud_palabra) != 0:
-                    palabra = block_storage.read(int(longitud_palabra))
+                palabra, indice_palabra = self.leer_palabra(block_storage, indice_palabra)
+                if palabra:
                     temporal_previo.write(palabra + ";" + post_str[:-1] + "\n")
-                    indice_palabra += len(palabra)
         block_storage.close()
         postings_list.close()
         temporal_previo.close()
         return open(os.path.join(basic_path, "temporal_previo.txt"), 'rt')
 
-    def buscar_palabra(self, palabra):
-        """INCOMPLETO
-        """
-        palabra = self.normalizar_string(palabra)
-        file = open(os.path.join(os.path.dirname(__file__), "..", "Indice", "block_storage.txt"), "r")
-        file.close()
-
     def obtener_apariciones(self, palabra):
-        """Devuelve un SET con las apariciones de la palabra"""
-        pass
+        """
+        :param palabra: palabra normalizada a buscar
+        :return: set con las apariciones de la palabra
+        """
+        basic_path = os.path.join(os.path.dirname(__file__), "..", "Indice")
+        block_storage = open(os.path.join(basic_path, "block_storage.txt"), "rt")
+        estructura_auxiliar = open(os.path.join(basic_path, "estructura_auxiliar.txt"), 'rt').read()[:-1].split(";")
+        postrings_list = open(os.path.join(basic_path, "postings_list.txt"), 'rt')
+        inicio = 0
+        fin = len(estructura_auxiliar)
+        medio = int((inicio + fin) / 2)
+        indice = 0
+        word = ""
+        while (inicio < fin):
+            indice = int(estructura_auxiliar[medio].split("-")[0])
+            word, indice = self.leer_palabra(block_storage, indice)
+            if word:
+                if word < palabra:
+                    inicio = medio
+                elif word > palabra:
+                    fin = medio - 1
+            medio = int((inicio + fin) / 2)
+            print(str(inicio) + "-" + str(medio) + "-" + str(fin))
+        print(palabra)
+        print(word)
+        block_storage.close()
+        postrings_list.close()
+
+    def leer_palabra(self, block_storage, indice_palabra):
+        block_storage.seek(indice_palabra)
+        longitud_palabra = block_storage.read(1)
+        indice_palabra += 1
+        continuar = True
+        while continuar:
+            temp = block_storage.read(1)
+            continuar = temp.isdigit()
+            if continuar:
+                longitud_palabra += temp
+                indice_palabra += 1
+        block_storage.seek(indice_palabra)
+        if len(longitud_palabra) != 0:
+            palabra = block_storage.read(int(longitud_palabra))
+            indice_palabra += len(palabra)
+        return palabra, indice_palabra
 
     def obtener_todos_docs(self):
         """Devuelve un SET con todos los docs"""
@@ -286,6 +308,7 @@ class Indice:
 
 # Test creacion-actualizacion indice
 if __name__ == '__main__':
-    Indice().formar_indice()
+    # Indice().formar_indice()
     # Indice().merge(os.path.join(os.path.dirname(__file__), "..", "Indice"), 4)
-    Indice().descomprimir_indice(os.path.join(os.path.dirname(__file__), "..", "Indice"))
+    #Indice().descomprimir_indice(os.path.join(os.path.dirname(__file__), "..", "Indice"))
+    Indice().obtener_apariciones("arbitr")
