@@ -68,8 +68,8 @@ class Indice:
         self.SPIMI(diccionario, basic_path)
         json.dump(diccionario, open(os.path.abspath(os.path.join(basic_path, "Dic.json")), "w"))
         self.merge(basic_path, 4)
-        for medio in sorted(self._INDICE_MEDIOS.keys()):
-            os.remove(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'))
+        # for medio in sorted(self._INDICE_MEDIOS.keys()):
+        #    os.remove(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'))
 
     def SPIMI(self, diccionario, basic_path):
         """
@@ -121,7 +121,10 @@ class Indice:
         words = []
         for word in str:
             if word != "" and word not in self._STOP_WORDS and len(word) >= self._WORD_MIN_LENGTH:
-                words.append(stemmer.stem(word))
+                word = stemmer.stem(word)
+                if "ñ" in word:
+                    word = "o@".join(word.split("ñ"))
+                words.append(word)
         return words
 
     def merge(self, basic_path, block_size):
@@ -141,14 +144,18 @@ class Indice:
                 lineas.append(archivo.readline().split(";"))
             else:
                 archivo.close()
+                intermedios.remove(archivo)
         actualizacion = False
         if lineas:
             try:
-                intermedios.append(self.descomprimir_indice(basic_path))
-                lineas.append(intermedios[-1].readline().split(";"))
+                file = self.descomprimir_indice(basic_path)
+                intermedios.append(file)
+                lineas.append(file.readline().split(";"))
                 actualizacion = True
             except:
                 pass
+        else:
+            return
         block_storage = open(os.path.join(basic_path, "block_storage.txt"), 'wt')
         estructura_auxiliar = open(os.path.join(basic_path, "estructura_auxiliar.txt"), 'wt')
         postings_list = open(os.path.join(basic_path, "postings_list.txt"), 'wt')
@@ -194,7 +201,7 @@ class Indice:
         postings_list.close()
         block_storage.close()
         if actualizacion:
-            lineas[0].close()
+            file.close()
             os.remove(os.path.join(basic_path, "temporal_previo.txt"))
 
     def comprimir_postings(self, postings, ref):
@@ -254,7 +261,7 @@ class Indice:
                 block_storage.seek(indice_palabra)
                 if len(longitud_palabra) != 0:
                     palabra = block_storage.read(int(longitud_palabra))
-                    temporal_previo.write(palabra + ";" + post_str + "\n")
+                    temporal_previo.write(palabra + ";" + post_str[:-1] + "\n")
                     indice_palabra += len(palabra)
         block_storage.close()
         postings_list.close()
@@ -281,4 +288,4 @@ class Indice:
 if __name__ == '__main__':
     Indice().formar_indice()
     # Indice().merge(os.path.join(os.path.dirname(__file__), "..", "Indice"), 4)
-    # Indice().descomprimir_indice(os.path.join(os.path.dirname(__file__), "..", "Indice"))
+    Indice().descomprimir_indice(os.path.join(os.path.dirname(__file__), "..", "Indice"))
