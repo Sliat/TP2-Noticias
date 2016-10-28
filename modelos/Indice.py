@@ -122,8 +122,8 @@ class Indice:
         for word in str:
             if word != "" and word not in self._STOP_WORDS and len(word) >= self._WORD_MIN_LENGTH:
                 word = stemmer.stem(word)
-                if "ñ" in word:
-                    word = "o@".join(word.split("ñ"))
+                word = word.replace("ñ", "o@")
+                word = word.replace("ü", "u")
                 words.append(word)
         return words
 
