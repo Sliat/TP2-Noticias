@@ -68,8 +68,8 @@ class Indice:
         self.SPIMI(diccionario, basic_path)
         json.dump(diccionario, open(os.path.abspath(os.path.join(basic_path, "Dic.json")), "w"))
         self.merge(basic_path, 4)
-        # for medio in sorted(self._INDICE_MEDIOS.keys()):
-        #    os.remove(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'))
+        for medio in sorted(self._INDICE_MEDIOS.keys()):
+            os.remove(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'))
 
     def SPIMI(self, diccionario, basic_path):
         """
