@@ -233,17 +233,7 @@ class Indice:
         for block in open(os.path.join(basic_path, "estructura_auxiliar.txt"), 'rt').read()[:-1].split(";"):
             indice_palabra = int(block.split("-")[0])
             for posting in block.split("-")[1].split(","):
-                post_list = ""
-                cont = True
-                postings_list.seek(int(posting))
-                while cont:
-                    temp = postings_list.read(1)
-                    cont = temp != ","
-                    if cont:
-                        post_list += temp
-                post_list = post_list.split("+")
-                for i in range(1, len(post_list)):
-                    post_list[i] = str(int(post_list[i]) + int(post_list[i - 1]))
+                post_list = self.leer_apariciones(postings_list, posting)
                 post_str = ""
                 for post in post_list:
                     post_str += post + ","
@@ -263,26 +253,27 @@ class Indice:
         basic_path = os.path.join(os.path.dirname(__file__), "..", "Indice")
         block_storage = open(os.path.join(basic_path, "block_storage.txt"), "rt")
         estructura_auxiliar = open(os.path.join(basic_path, "estructura_auxiliar.txt"), 'rt').read()[:-1].split(";")
-        postrings_list = open(os.path.join(basic_path, "postings_list.txt"), 'rt')
         inicio = 0
         fin = len(estructura_auxiliar)
         medio = int((inicio + fin) / 2)
-        indice = 0
-        word = ""
-        while (inicio < fin):
+        while inicio + 1 < fin:
             indice = int(estructura_auxiliar[medio].split("-")[0])
             word, indice = self.leer_palabra(block_storage, indice)
             if word:
-                if word < palabra:
+                if word <= palabra:
                     inicio = medio
                 elif word > palabra:
-                    fin = medio - 1
+                    fin = medio
             medio = int((inicio + fin) / 2)
-            print(str(inicio) + "-" + str(medio) + "-" + str(fin))
-        print(palabra)
-        print(word)
+        posicion = self.obtener_posicion_bloque(palabra, int(estructura_auxiliar[medio].split("-")[0]), block_storage)
         block_storage.close()
+        if posicion == -1:
+            return set()
+        postrings_list = open(os.path.join(basic_path, "postings_list.txt"), 'rt')
+        indice = int(estructura_auxiliar[medio].split("-")[1].split(",")[posicion])
+        apariciones = self.leer_apariciones(postrings_list, indice)
         postrings_list.close()
+        return set(apariciones)
 
     def leer_palabra(self, block_storage, indice_palabra):
         block_storage.seek(indice_palabra)
@@ -301,6 +292,41 @@ class Indice:
             indice_palabra += len(palabra)
         return palabra, indice_palabra
 
+    def leer_apariciones(self, postings_list, indice):
+        """
+        :param postings_list: postings_list
+        :param indice: indice de inicio postings
+        :return: lista con las apariciones
+        """
+        post_list = ""
+        cont = True
+        postings_list.seek(int(indice))
+        while cont:
+            temp = postings_list.read(1)
+            cont = temp != ","
+            if cont:
+                post_list += temp
+        post_list = post_list.split("+")
+        for i in range(1, len(post_list)):
+            post_list[i] = str(int(post_list[i]) + int(post_list[i - 1]))
+        return post_list
+
+    def obtener_posicion_bloque(self, palabra, indice, block_storage):
+        """
+        :param palabra: palabra a buscar
+        :param indice: indice de inicio bloque
+        :param block_storage: block_storage
+        :return: numero con la posicion en el bloque 0-(tamaño bloque -1), -1 si no esta
+        """
+        posicion = -1
+        word = ""
+        while word != palabra and posicion < 3:
+            word, indice = self.leer_palabra(block_storage, indice)
+            posicion += 1
+        if word != palabra:
+            posicion = -1
+        return posicion
+
     def obtener_todos_docs(self):
         """Devuelve un SET con todos los docs"""
         pass
@@ -308,7 +334,6 @@ class Indice:
 
 # Test creacion-actualizacion indice
 if __name__ == '__main__':
-    # Indice().formar_indice()
-    # Indice().merge(os.path.join(os.path.dirname(__file__), "..", "Indice"), 4)
-    #Indice().descomprimir_indice(os.path.join(os.path.dirname(__file__), "..", "Indice"))
-    Indice().obtener_apariciones("arbitr")
+    Indice().formar_indice()
+    Indice().descomprimir_indice(os.path.join(os.path.dirname(__file__), "..", "Indice"))
+    print(Indice().obtener_apariciones("econom"))
