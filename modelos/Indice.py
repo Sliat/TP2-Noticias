@@ -94,7 +94,7 @@ class Indice:
                     for word in descripcion:
                         indice.setdefault(word, []).append(
                             (medio + str((int(seccion) * 2) - 1) + '{0:03d}'.format(id_noticia)))
-            temp = open(os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'wt')
+            temp = open(os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'wt' ,encoding='latin-1')
             for termino in sorted(indice.keys()):
                 temp.write(termino + ';' + ''.join([str(x) + ',' for x in indice[termino]])[:-1] + "\n")
             temp.close()
@@ -136,7 +136,7 @@ class Indice:
         intermedios = []
         for medio in sorted(self._INDICE_MEDIOS.keys()):
             intermedios.append(
-                open(os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'rt'))
+                open(os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'rt' , encoding='latin-1'))
         lineas = []
         for x in range(len(intermedios) - 1, -1, -1):
             linea = intermedios[x].readline().split(";")
@@ -164,9 +164,9 @@ class Indice:
         :param intermedios: lista de archivos ordenadas
         :param previo: archivo con los elementos anteriores, None si no es una actualizacion
         """
-        block_storage = open(os.path.join(self._BASIC_PATH, "block_storage.txt"), 'wt')
-        estructura_auxiliar = open(os.path.join(self._BASIC_PATH, "estructura_auxiliar.txt"), 'wt')
-        postings_list = open(os.path.join(self._BASIC_PATH, "postings_list.txt"), 'wt')
+        block_storage = open(os.path.join(self._BASIC_PATH, "block_storage.txt"), 'wt' , encoding='latin-1')
+        estructura_auxiliar = open(os.path.join(self._BASIC_PATH, "estructura_auxiliar.txt"), 'wt' , encoding='latin-1')
+        postings_list = open(os.path.join(self._BASIC_PATH, "postings_list.txt"), 'wt' , encoding='latin-1')
         indice_block = 0
         indice_postings = 0
         postings = []
@@ -240,10 +240,10 @@ class Indice:
         Transfora el indice comprimido (block_storage, estructura_auxiliar y postings_list)
         al formato de un archivo intermedio para poder hacer el merge al actualizar el indice
         """
-        block_storage = open(os.path.join(self._BASIC_PATH, "block_storage.txt"), 'rt')
-        postings_list = open(os.path.join(self._BASIC_PATH, "postings_list.txt"), 'rt')
-        temporal_previo = open(os.path.join(self._BASIC_PATH, "temporal_previo.txt"), 'wt')
-        for block in open(os.path.join(self._BASIC_PATH, "estructura_auxiliar.txt"), 'rt').read()[:-1].split(";"):
+        block_storage = open(os.path.join(self._BASIC_PATH, "block_storage.txt"), 'rt' , encoding='latin-1')
+        postings_list = open(os.path.join(self._BASIC_PATH, "postings_list.txt"), 'rt' , encoding='latin-1')
+        temporal_previo = open(os.path.join(self._BASIC_PATH, "temporal_previo.txt"), 'wt' , encoding='latin-1')
+        for block in open(os.path.join(self._BASIC_PATH, "estructura_auxiliar.txt"), 'rt' , encoding='latin-1').read()[:-1].split(";"):
             indice_palabra = int(block.split("-")[0])
             for posting in block.split("-")[1].split(","):
                 post_list = self.leer_apariciones(postings_list, posting)
@@ -264,8 +264,8 @@ class Indice:
         :return: set con las apariciones de la palabra
         """
         basic_path = os.path.join(os.path.dirname(__file__), "..", "Indice")
-        block_storage = open(os.path.join(basic_path, "block_storage.txt"), "rt")
-        estructura_auxiliar = open(os.path.join(basic_path, "estructura_auxiliar.txt"), 'rt').read()[:-1].split(";")
+        block_storage = open(os.path.join(basic_path, "block_storage.txt"), "rt" , encoding='latin-1')
+        estructura_auxiliar = open(os.path.join(basic_path, "estructura_auxiliar.txt"), 'rt' , encoding='latin-1').read()[:-1].split(";")
         inicio = 0
         fin = len(estructura_auxiliar)
         medio = int((inicio + fin) / 2)
@@ -282,11 +282,12 @@ class Indice:
         block_storage.close()
         if posicion == -1:
             return set()
-        postrings_list = open(os.path.join(basic_path, "postings_list.txt"), 'rt')
+        postrings_list = open(os.path.join(basic_path, "postings_list.txt"), 'rt' , encoding='latin-1')
         indice = int(estructura_auxiliar[medio].split("-")[1].split(",")[posicion])
         apariciones = self.leer_apariciones(postrings_list, indice)
         postrings_list.close()
-        return set(apariciones)
+        #Las devuelve ordenadas por medio
+        return sorted(set(apariciones))
 
     def leer_palabra(self, block_storage, indice_palabra):
         """
