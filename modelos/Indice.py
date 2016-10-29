@@ -10,6 +10,7 @@ class Indice:
     _INDICE_SECCION = {"1": "economia", "2": "mundo", "3": "politica", "4": "sociedad", "5": "ultimas"}
     _INDICE_ELEMENTO = {"1": "titulo", "2": "descripcion"}
     _WORD_MIN_LENGTH = 4
+    _BASIC_PATH = os.path.join(os.path.dirname(__file__), "..", "Indice")
     _STOP_WORDS = frozenset(['de', 'la', 'que', 'el', 'en', 'y', 'a', 'los',
                              'del', 'se', 'las', 'por', 'un', 'para', 'con', 'no', 'una', 'su', 'al', 'es',
                              'lo', 'como', 'más', 'pero', 'sus', 'le', 'ya', 'o', 'fue', 'este', 'ha', 'sí',
@@ -55,22 +56,23 @@ class Indice:
 
     def formar_indice(self):
         """Actualiza el indice, en caso de que no exista lo crea"""
-        basic_path = os.path.join(os.path.dirname(__file__), "..", "Indice")
         try:
-            diccionario = json.load(open(os.path.join(basic_path, "Dic.json")))
+            diccionario = json.load(open(os.path.join(self._BASIC_PATH, "Dic.json")))
         except:
             diccionario = {"1": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
                            "2": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
                            "3": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
                            "4": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
                            "5": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}}
-        self.spimi(diccionario, basic_path)
-        json.dump(diccionario, open(os.path.abspath(os.path.join(basic_path, "Dic.json")), "w"))
-        self.merge(basic_path, 4)
+        self.spimi(diccionario)
+        json.dump(diccionario, open(os.path.abspath(os.path.join(self._BASIC_PATH, "Dic.json")), "w"))
+        elementos = self.preparar_elementos_para_el_merge()
+        if elementos[0]:
+            self.merge(4, elementos[0], elementos[1], elementos[2])
         for medio in sorted(self._INDICE_MEDIOS.keys()):
-            os.remove(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'))
+            os.remove(os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'))
 
-    def spimi(self, diccionario, basic_path):
+    def spimi(self, diccionario):
         """
         SPIMI : Single-pass in-memory indexing
         crea multiples archivos intermedios con termino : postings
@@ -80,7 +82,7 @@ class Indice:
         for medio in diccionario.keys():
             indice = {}
             for seccion in sorted(diccionario[medio].keys()):
-                noticias = self.obtener_noticias((medio, seccion, diccionario[medio]), basic_path)
+                noticias = self.obtener_noticias((medio, seccion, diccionario[medio]))
                 noticias = list(map(
                     lambda x: (self.normalizar_string(x[0]), self.normalizar_string(x[1]), diccionario[medio][seccion]),
                     noticias))
@@ -92,17 +94,17 @@ class Indice:
                     for word in descripcion:
                         indice.setdefault(word, []).append(
                             (medio + str((int(seccion) * 2) - 1) + '{0:03d}'.format(id_noticia)))
-            temp = open(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'wt')
+            temp = open(os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'wt')
             for termino in sorted(indice.keys()):
                 temp.write(termino + ';' + ''.join([str(x) + ',' for x in indice[termino]])[:-1] + "\n")
             temp.close()
 
-    def obtener_noticias(self, posicion, basic_path):
+    def obtener_noticias(self, posicion):
         """
         :param posicion: tupla con medio, seccion, diccionario con id noticia anterior
         :return: todas las noticias de un medio y seccion especificas a partir de un id
         """
-        tree = etree.parse(os.path.join(basic_path, "..", "sources", self._INDICE_MEDIOS[posicion[0]] + ".xml"),
+        tree = etree.parse(os.path.join(self._BASIC_PATH, "..", "sources", self._INDICE_MEDIOS[posicion[0]] + ".xml"),
                            etree.XMLParser(remove_blank_text=True))
         noticia_str = "seccion[" + posicion[1] + "]/noticia[" + str(posicion[2][posicion[1]] + 1) + "]"
         if len(tree.xpath(noticia_str)) == 0:
@@ -126,38 +128,45 @@ class Indice:
                 words.append(word)
         return words
 
-    def merge(self, basic_path, block_size):
+    def preparar_elementos_para_el_merge(self):
         """
-        Unifica los archivos intermedios creados por SPIMI en un indice comprimido que consiste en un "block storage"
-        con las palabras y una estructura auxiliar con los postings y referencias al "block storage"
-        :param basic_path: path de la carpeta Indice donde se encuentras los archivos
-        :param block_size: tamaño de cada bloque en el "block storage"
+        Crea listas de lineas y archivos para el merge, obteniendo solo los elementos que tienen informacion
+        :return: tupla con (lista de lineas, lista de archivos, archivo previo) ordenadas
         """
         intermedios = []
         for medio in sorted(self._INDICE_MEDIOS.keys()):
-            intermedios.append(open(os.path.join(basic_path, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'rt'))
+            intermedios.append(
+                open(os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'rt'))
         lineas = []
-        for archivo in intermedios:
-            linea = archivo.readline().split(";")
-            if len(linea[0]) != 0:
-                lineas.append(archivo.readline().split(";"))
+        for x in range(len(intermedios) - 1, -1, -1):
+            linea = intermedios[x].readline().split(";")
+            if len(linea[0].lstrip()) != 0:
+                lineas.append(intermedios[x].readline().split(";"))
             else:
-                archivo.close()
-                intermedios.remove(archivo)
-        actualizacion = False
+                intermedios[x].close()
+                intermedios.remove(intermedios[x])
+        file = None
         if lineas:
             try:
-                file = self.descomprimir_indice(basic_path)
+                file = self.descomprimir_indice()
                 intermedios.append(file)
                 lineas.append(file.readline().split(";"))
-                actualizacion = True
             except:
                 pass
-        else:
-            return
-        block_storage = open(os.path.join(basic_path, "block_storage.txt"), 'wt')
-        estructura_auxiliar = open(os.path.join(basic_path, "estructura_auxiliar.txt"), 'wt')
-        postings_list = open(os.path.join(basic_path, "postings_list.txt"), 'wt')
+        return lineas, intermedios, file
+
+    def merge(self, block_size, lineas, intermedios, previo):
+        """
+        Unifica los archivos intermedios creados por SPIMI en un indice comprimido que consiste en un "block storage"
+        con las palabras, un posting_list y una estructura auxiliar con referencias a los postings y al "block storage"
+        :param block_size: tamaño de cada bloque en el "block storage"
+        :param lineas: lista de lineas ordenadas
+        :param intermedios: lista de archivos ordenadas
+        :param previo: archivo con los elementos anteriores, None si no es una actualizacion
+        """
+        block_storage = open(os.path.join(self._BASIC_PATH, "block_storage.txt"), 'wt')
+        estructura_auxiliar = open(os.path.join(self._BASIC_PATH, "estructura_auxiliar.txt"), 'wt')
+        postings_list = open(os.path.join(self._BASIC_PATH, "postings_list.txt"), 'wt')
         indice_block = 0
         indice_postings = 0
         postings = []
@@ -199,14 +208,14 @@ class Indice:
         estructura_auxiliar.close()
         postings_list.close()
         block_storage.close()
-        if actualizacion:
-            file.close()
-            os.remove(os.path.join(basic_path, "temporal_previo.txt"))
+        if previo:
+            os.remove(os.path.join(self._BASIC_PATH, "temporal_previo.txt"))
 
     def comprimir_postings(self, postings, ref):
         """
         :param postings: string con los postings
-        :return: string comprimido con los postings
+        :param ref: indice del comienzo de los postings en el archivo
+        :return: string comprimido con los postings, indices del comienzo de cada posting en el archivo
         """
         res = ""
         for post in postings:
@@ -226,11 +235,15 @@ class Indice:
             pos_str += str(posiciones[i]) + ","
         return res, pos_str[:-1]
 
-    def descomprimir_indice(self, basic_path):
-        block_storage = open(os.path.join(basic_path, "block_storage.txt"), 'rt')
-        postings_list = open(os.path.join(basic_path, "postings_list.txt"), 'rt')
-        temporal_previo = open(os.path.join(basic_path, "temporal_previo.txt"), 'wt')
-        for block in open(os.path.join(basic_path, "estructura_auxiliar.txt"), 'rt').read()[:-1].split(";"):
+    def descomprimir_indice(self):
+        """
+        Transfora el indice comprimido (block_storage, estructura_auxiliar y postings_list)
+        al formato de un archivo intermedio para poder hacer el merge al actualizar el indice
+        """
+        block_storage = open(os.path.join(self._BASIC_PATH, "block_storage.txt"), 'rt')
+        postings_list = open(os.path.join(self._BASIC_PATH, "postings_list.txt"), 'rt')
+        temporal_previo = open(os.path.join(self._BASIC_PATH, "temporal_previo.txt"), 'wt')
+        for block in open(os.path.join(self._BASIC_PATH, "estructura_auxiliar.txt"), 'rt').read()[:-1].split(";"):
             indice_palabra = int(block.split("-")[0])
             for posting in block.split("-")[1].split(","):
                 post_list = self.leer_apariciones(postings_list, posting)
@@ -243,7 +256,7 @@ class Indice:
         block_storage.close()
         postings_list.close()
         temporal_previo.close()
-        return open(os.path.join(basic_path, "temporal_previo.txt"), 'rt')
+        return open(os.path.join(self._BASIC_PATH, "temporal_previo.txt"), 'rt')
 
     def obtener_apariciones(self, palabra):
         """
@@ -276,6 +289,11 @@ class Indice:
         return set(apariciones)
 
     def leer_palabra(self, block_storage, indice_palabra):
+        """
+        :param block_storage: archivo block_storage
+        :param indice_palabra: indice de inicio palabra en el archivo
+        :return:
+        """
         block_storage.seek(indice_palabra)
         longitud_palabra = block_storage.read(1)
         indice_palabra += 1
@@ -294,8 +312,8 @@ class Indice:
 
     def leer_apariciones(self, postings_list, indice):
         """
-        :param postings_list: postings_list
-        :param indice: indice de inicio postings
+        :param postings_list: archivo postings_list
+        :param indice: indice de inicio postings en el archivo
         :return: lista con las apariciones
         """
         post_list = ""
@@ -315,7 +333,7 @@ class Indice:
         """
         :param palabra: palabra a buscar
         :param indice: indice de inicio bloque
-        :param block_storage: block_storage
+        :param block_storage: archivo block_storage
         :return: numero con la posicion en el bloque 0-(tamaño bloque -1), -1 si no esta
         """
         posicion = -1
@@ -335,5 +353,5 @@ class Indice:
 # Test creacion-actualizacion indice
 if __name__ == '__main__':
     Indice().formar_indice()
-    Indice().descomprimir_indice(os.path.join(os.path.dirname(__file__), "..", "Indice"))
+    Indice().descomprimir_indice()
     print(Indice().obtener_apariciones("econom"))
