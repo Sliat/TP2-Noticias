@@ -3,6 +3,7 @@ import json
 import re
 from lxml import etree
 from nltk.stem import SnowballStemmer
+from modelos.Ranking import Ranking
 
 
 class Indice:
@@ -70,7 +71,10 @@ class Indice:
         if elementos[0]:
             self.merge(4, elementos[0], elementos[1], elementos[2])
         for medio in sorted(self._INDICE_MEDIOS.keys()):
-            os.remove(os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'))
+            #ACA construyo el indice
+            spimi = os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt')
+            self.actualizar_ranking(medio,spimi)
+            #os.remove(spimi)
 
     def spimi(self, diccionario):
         """
@@ -114,6 +118,13 @@ class Indice:
         for noticia in tree.xpath(noticia_str)[0].itersiblings():
             posicion[2][posicion[1]] += 1
             yield (noticia.xpath("titulo")[0].text, noticia.xpath("descripcion")[0].text)
+
+
+    def actualizar_ranking(self , medio , spimi):
+        print(medio,spimi)
+
+
+
 
     def normalizar_string(self, string):
         """ :return: lista de palabras normalizadas"""
@@ -354,5 +365,5 @@ class Indice:
 # Test creacion-actualizacion indice
 if __name__ == '__main__':
     Indice().formar_indice()
-    Indice().descomprimir_indice()
-    print(Indice().obtener_apariciones("econom"))
+    #Indice().descomprimir_indice()
+    #print(Indice().obtener_apariciones("econom"))
