@@ -6,14 +6,18 @@ from config import rss_sources as sources
 from librerias.CronTab import CronTab
 from librerias.Evento import Evento
 from modelos.Medio import Medio
+from modelos.Ranking import Ranking
+
 
 
 class RecortesDeNoticias(object):
     _intervalo_consulta = 60  # en segundos
     medio_model = Medio()
 
+
     def __init__(self):
         self.indice = modelos.Indice.Indice()
+        self.ranking = Ranking()
 
     def set_intervalo_consulta(self, minutos):
         self._intervalo_consulta = int(minutos * 60)
@@ -35,8 +39,16 @@ class RecortesDeNoticias(object):
         # op = 1 significa titulos, op = 2 significa cuerpos
         # lugar : categorias y medios
 
-    def ranking(self, op, lugar):
-        pass
+    def mostrar_ranking(self, op, lugar):
+        idmedio, idseccion = lugar
+        ranking_seleccinado = self.ranking.get_ranking(op ,idmedio, idseccion)
+        print("\tRanking de las %s palabras más mencionadas en %s de noticias:" % (self.ranking.MAX_RANKED , self.ranking.RANK_SECTOR[str(op)]))
+        print("\tMedio: %s - Seccion: %s" % (self.medio_model.medios[self.ranking.INDICE_MEDIOS[str(idmedio)]]["nombre"], self.ranking.INDICE_SECCION[str(idseccion)].title()))
+        puesto = 1
+        for palabra in sorted(ranking_seleccinado, key=ranking_seleccinado.get, reverse=True):
+            print("\t\tPuesto %s : \"%s\" con %s apariciones" % (puesto, palabra, ranking_seleccinado[palabra]))
+            puesto +=1
+
 
     def cantidad(self, intervalo, lugar):
         pass

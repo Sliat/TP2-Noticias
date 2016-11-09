@@ -44,18 +44,21 @@ class Medio(object):
         root = medio_xml.getroot()
 
         for idseccion, url in sorted(telam_rss_secciones.items()):
-            #print("extract from ", idseccion, url)
+            try:
+                #print("extract from ", idseccion, url)
 
-            seccion_xml = etree.XML(self.extraer_feed(url), parser)
-            #print(seccion_xml.findall("./channel/title")[0].text)
+                seccion_xml = etree.XML(self.extraer_feed(url), parser)
+                #print(seccion_xml.findall("./channel/title")[0].text)
 
-            noticias = seccion_xml.find('./channel')
-            next_id = self.get_next_id(idmedio, idseccion)
-            for noticia in noticias.findall('item'):
-                noticia_ya_agregada = self.add_from_rss(noticia, idmedio, idseccion, root, next_id)
+                noticias = seccion_xml.find('./channel')
+                next_id = self.get_next_id(idmedio, idseccion)
+                for noticia in noticias.findall('item'):
+                    noticia_ya_agregada = self.add_from_rss(noticia, idmedio, idseccion, root, next_id)
 
-                if not noticia_ya_agregada:
-                    next_id += 1
+                    if not noticia_ya_agregada:
+                        next_id += 1
+            except etree.XMLSyntaxError or ValueError:
+                print("El rss del medio %s esta corrupto" % url)
 
         self.guardar_medio_xml(idmedio, root)
 

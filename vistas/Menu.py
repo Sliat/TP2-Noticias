@@ -30,7 +30,7 @@ class Menu(object):
             print("-" * 70)
             print("\nOperacion seleccionada:", self.operaciones[op], "\n")
             self.menus_disponibles[op]()
-        except:
+        except IOError:
             print("Ocurrio un error en la seleccion de la operación")
 
     def seleccion_simple(self, titulo, opciones, texto):
@@ -49,13 +49,13 @@ class Menu(object):
             print("-" * 70)
             try:
                 numero = int(input("\nInserte número de la " + texto + " que desea: "))
-                if len(opciones) >= numero >= 1:
+                if len(opciones) >= numero >= 0:
                     posicion = numero
                 else:
                     self.clear()
-                    print("Debe ingresar un numero entre 1 y " + str(len(opciones)))
+                    print("Debe ingresar un numero entre 0 y " + str(len(opciones)))
             except ValueError:
-                print("Debe ingresar un numero entre 1 y " + str(len(opciones)))
+                print("Debe ingresar un numero entre 0 y " + str(len(opciones)))
         return posicion
 
     def ranking_n_palabras(self):
@@ -63,7 +63,7 @@ class Menu(object):
         opciones = {1: "Titulos", 2: "Cuerpos"}
         op = int(self.seleccion_simple(titulo, opciones, "opcion"))
         lugar = self.obtener_lugar()
-        self.controlador.ranking(op, lugar)
+        self.controlador.mostrar_ranking(op, lugar)
 
     def cantidad_de_noticias(self):
         """
@@ -106,25 +106,21 @@ class Menu(object):
         :return tupla con medio y categoria
         """
         titulo_medio = self.nombre + " - Seleccion de medio"
-        opciones_medio = {
-            1: "Todos",
-            2: "Clarin",
-            3: "La Nacion",
-            4: "Telam",
-            5: "BBC",
-            6: " OTRO "
-        }
+        opciones_medio = {0: "Todos los medios"}
+        for idmedio , medio in sorted(self.controlador.medio_model.medios.items()):
+            opciones_medio[medio["id"]] = medio["nombre"]
+
         op_medio = int(self.seleccion_simple(titulo_medio, opciones_medio, "medio"))
+
         titulo_categoria = self.nombre + " - Seleccion de categoria"
-        opciones_categoria = {
-            1: "Todas",
-            2: "ultimas",
-            3: "politica",
-            4: "sociedad",
-            5: "economia",
-            6: "mundo"
-        }
+        opciones_categoria = {}
+        for idcategoria , categoria in sorted(self.controlador.ranking.INDICE_SECCION.items()):
+            opciones_categoria[idcategoria] = categoria.title()
+
+        opciones_categoria["0"] = "Todas las categorias"
+
         op_categoria = int(self.seleccion_simple(titulo_categoria, opciones_categoria, "categoria"))
+
         return op_medio, op_categoria
 
     def clear(self):
@@ -133,3 +129,8 @@ class Menu(object):
     def salir(self):
         self.terminar = True
         print("Gracias por usar el " + self.nombre + " UNTREF")
+
+
+if __name__ == '__main__':
+    menu = Menu()
+    menu.obtener_lugar()
