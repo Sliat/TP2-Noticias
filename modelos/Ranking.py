@@ -75,7 +75,6 @@ class Ranking(object):
 
     def actualizar_ranking_medio(self, medio , spimi):
         (medio , archivo) = (self._INDICE_MEDIOS[medio] , open(spimi , encoding='latin-1'))
-        print(medio)
         import re
         for line in archivo:
             palabra , ubicaciones = line.split(';')
@@ -165,5 +164,4 @@ class Ranking(object):
 if __name__ == '__main__':
     print("Esto es el ranking que consume de indice y es consumido desde el recortes de noticias")
     ranking = Ranking()
-    # print(ranking.ranking_cuerpo , ranking.frecuencia_titulo)
     ranking.actualizar_raking()

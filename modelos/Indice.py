@@ -65,16 +65,20 @@ class Indice:
                            "3": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
                            "4": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0},
                            "5": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}}
+
+        self.ranking = Ranking()
         self.spimi(diccionario)
         json.dump(diccionario, open(os.path.abspath(os.path.join(self._BASIC_PATH, "Dic.json")), "w"))
         elementos = self.preparar_elementos_para_el_merge()
         if elementos[0]:
             self.merge(4, elementos[0], elementos[1], elementos[2])
         for medio in sorted(self._INDICE_MEDIOS.keys()):
-            #ACA construyo el indice
             spimi = os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt')
             self.actualizar_ranking(medio,spimi)
-            #os.remove(spimi)
+            os.remove(spimi)
+
+        # Guardamos el ranking solo una vez cuando termino de procesar los spimi
+        self.ranking.guardar_rankings()
 
     def spimi(self, diccionario):
         """
@@ -121,15 +125,13 @@ class Indice:
 
 
     def actualizar_ranking(self , medio , spimi):
-        print(medio,spimi)
-
-
+        self.ranking.actualizar_ranking_medio(medio, spimi)
 
 
     def normalizar_string(self, string):
         """ :return: lista de palabras normalizadas"""
         stemmer = SnowballStemmer('spanish')
-        string = re.split(r"[0-9_\W]", string)
+        string = re.split(r"[0-9_\W]", str(string))
         words = []
         for word in string:
             if word != "" and word not in self._STOP_WORDS and len(word) > self._WORD_MIN_LENGTH:
