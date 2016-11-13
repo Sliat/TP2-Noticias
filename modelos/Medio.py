@@ -26,7 +26,7 @@ class Medio(object):
                 if not os.path.isfile(archivo_xml):
                    self.create_medio_xml(idmedio , archivo_xml)
             except OSError:
-                print("Hubo un problema en los archivos xml de la extracción de noticias")
+                pass
 
 
     def extraer_noticias_medios(self):
@@ -57,8 +57,8 @@ class Medio(object):
 
                     if not noticia_ya_agregada:
                         next_id += 1
-            except etree.XMLSyntaxError or ValueError:
-                print("El rss del medio %s esta corrupto" % url)
+            except:
+                pass
 
         self.guardar_medio_xml(idmedio, root)
 

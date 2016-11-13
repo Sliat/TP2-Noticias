@@ -134,7 +134,7 @@ class Indice:
         string = re.split(r"[0-9_\W]", str(string))
         words = []
         for word in string:
-            if word != "" and word not in self._STOP_WORDS and len(word) > self._WORD_MIN_LENGTH:
+            if word != "" and word not in self._STOP_WORDS and len(word) >= self._WORD_MIN_LENGTH:
                 word = stemmer.stem(word)
                 word = word.replace("ñ", "o@")
                 word = word.replace("ü", "u")
@@ -275,6 +275,7 @@ class Indice:
         """
         :param palabra: palabra normalizada a buscar
         :return: set con las apariciones de la palabra
+        AVISO: No las devuelve con la misma convencion con la que se almacenan en disco
         """
         basic_path = os.path.join(os.path.dirname(__file__), "..", "Indice")
         block_storage = open(os.path.join(basic_path, "block_storage.txt"), "rt" , encoding='latin-1')
@@ -299,8 +300,14 @@ class Indice:
         indice = int(estructura_auxiliar[medio].split("-")[1].split(",")[posicion])
         apariciones = self.leer_apariciones(postrings_list, indice)
         postrings_list.close()
-        #Las devuelve ordenadas por medio
-        return sorted(set(apariciones))
+        resultado = set()
+        #Esto obtiene del segundo numero el cual contenia seccion y descripcion/titulo, la seccion
+        for post in apariciones:
+            norm = post[0]
+            norm += str(int((int(post[1])/2)) + 1)
+            norm += post[2:]
+            resultado.add(norm)
+        return resultado
 
     def leer_palabra(self, block_storage, indice_palabra):
         """
@@ -366,6 +373,8 @@ class Indice:
 
 # Test creacion-actualizacion indice
 if __name__ == '__main__':
-    Indice().formar_indice()
+    #Indice().formar_indice()
     #Indice().descomprimir_indice()
     #print(Indice().obtener_apariciones("econom"))
+    #print (Indice().normalizar_string(" casa  asdfwefc"))
+    pass
