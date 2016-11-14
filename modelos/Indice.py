@@ -67,6 +67,7 @@ class Indice:
                            "5": {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0}}
 
         self.ranking = Ranking()
+        self.diccionario_cantidad = {}
         self.spimi(diccionario)
         json.dump(diccionario, open(os.path.abspath(os.path.join(self._BASIC_PATH, "Dic.json")), "w"))
         elementos = self.preparar_elementos_para_el_merge()
@@ -74,10 +75,13 @@ class Indice:
             self.merge(4, elementos[0], elementos[1], elementos[2])
         for medio in sorted(self._INDICE_MEDIOS.keys()):
             spimi = os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt')
-            self.actualizar_ranking(medio,spimi)
+            self.actualizar_ranking(medio, spimi)
             os.remove(spimi)
 
         # Guardamos el ranking solo una vez cuando termino de procesar los spimi
+        json.dump(self.diccionario_cantidad,
+                  open(os.path.abspath(os.path.join(self._BASIC_PATH, "cantidad.json")), "w"))
+        self.__delattr__("diccionario_cantidad")
         self.ranking.guardar_rankings()
 
     def spimi(self, diccionario):
@@ -102,7 +106,8 @@ class Indice:
                     for word in descripcion:
                         indice.setdefault(word, []).append(
                             (medio + str((int(seccion) * 2) - 1) + '{0:03d}'.format(id_noticia)))
-            temp = open(os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'wt' ,encoding='latin-1')
+            temp = open(os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'wt',
+                        encoding='latin-1')
             for termino in sorted(indice.keys()):
                 temp.write(termino + ';' + ''.join([str(x) + ',' for x in indice[termino]])[:-1] + "\n")
             temp.close()
@@ -118,15 +123,15 @@ class Indice:
         if len(tree.xpath(noticia_str)) == 0:
             return
         posicion[2][posicion[1]] += 1
+        self.sumar_noticia_al_dic(tree.xpath(noticia_str + "/fecha")[0].text, (posicion[0] + posicion[1]))
         yield tree.xpath(noticia_str + "/titulo")[0].text, tree.xpath(noticia_str + "/descripcion")[0].text
         for noticia in tree.xpath(noticia_str)[0].itersiblings():
             posicion[2][posicion[1]] += 1
+            self.sumar_noticia_al_dic(noticia.xpath("fecha")[0].text, (posicion[0] + posicion[1]))
             yield (noticia.xpath("titulo")[0].text, noticia.xpath("descripcion")[0].text)
 
-
-    def actualizar_ranking(self , medio , spimi):
+    def actualizar_ranking(self, medio, spimi):
         self.ranking.actualizar_ranking_medio(medio, spimi)
-
 
     def normalizar_string(self, string):
         """ :return: lista de palabras normalizadas"""
@@ -149,7 +154,8 @@ class Indice:
         intermedios = []
         for medio in sorted(self._INDICE_MEDIOS.keys()):
             intermedios.append(
-                open(os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'rt' , encoding='latin-1'))
+                open(os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt'), 'rt',
+                     encoding='latin-1'))
         lineas = []
         for x in range(len(intermedios) - 1, -1, -1):
             linea = intermedios[x].readline().split(";")
@@ -177,9 +183,9 @@ class Indice:
         :param intermedios: lista de archivos ordenadas
         :param previo: archivo con los elementos anteriores, None si no es una actualizacion
         """
-        block_storage = open(os.path.join(self._BASIC_PATH, "block_storage.txt"), 'wt' , encoding='latin-1')
-        estructura_auxiliar = open(os.path.join(self._BASIC_PATH, "estructura_auxiliar.txt"), 'wt' , encoding='latin-1')
-        postings_list = open(os.path.join(self._BASIC_PATH, "postings_list.txt"), 'wt' , encoding='latin-1')
+        block_storage = open(os.path.join(self._BASIC_PATH, "block_storage.txt"), 'wt', encoding='latin-1')
+        estructura_auxiliar = open(os.path.join(self._BASIC_PATH, "estructura_auxiliar.txt"), 'wt', encoding='latin-1')
+        postings_list = open(os.path.join(self._BASIC_PATH, "postings_list.txt"), 'wt', encoding='latin-1')
         indice_block = 0
         indice_postings = 0
         postings = []
@@ -253,10 +259,11 @@ class Indice:
         Transfora el indice comprimido (block_storage, estructura_auxiliar y postings_list)
         al formato de un archivo intermedio para poder hacer el merge al actualizar el indice
         """
-        block_storage = open(os.path.join(self._BASIC_PATH, "block_storage.txt"), 'rt' , encoding='latin-1')
-        postings_list = open(os.path.join(self._BASIC_PATH, "postings_list.txt"), 'rt' , encoding='latin-1')
-        temporal_previo = open(os.path.join(self._BASIC_PATH, "temporal_previo.txt"), 'wt' , encoding='latin-1')
-        for block in open(os.path.join(self._BASIC_PATH, "estructura_auxiliar.txt"), 'rt' , encoding='latin-1').read()[:-1].split(";"):
+        block_storage = open(os.path.join(self._BASIC_PATH, "block_storage.txt"), 'rt', encoding='latin-1')
+        postings_list = open(os.path.join(self._BASIC_PATH, "postings_list.txt"), 'rt', encoding='latin-1')
+        temporal_previo = open(os.path.join(self._BASIC_PATH, "temporal_previo.txt"), 'wt', encoding='latin-1')
+        for block in open(os.path.join(self._BASIC_PATH, "estructura_auxiliar.txt"), 'rt', encoding='latin-1').read()[
+                     :-1].split(";"):
             indice_palabra = int(block.split("-")[0])
             for posting in block.split("-")[1].split(","):
                 post_list = self.leer_apariciones(postings_list, posting)
@@ -278,8 +285,9 @@ class Indice:
         AVISO: No las devuelve con la misma convencion con la que se almacenan en disco
         """
         basic_path = os.path.join(os.path.dirname(__file__), "..", "Indice")
-        block_storage = open(os.path.join(basic_path, "block_storage.txt"), "rt" , encoding='latin-1')
-        estructura_auxiliar = open(os.path.join(basic_path, "estructura_auxiliar.txt"), 'rt' , encoding='latin-1').read()[:-1].split(";")
+        block_storage = open(os.path.join(basic_path, "block_storage.txt"), "rt", encoding='latin-1')
+        estructura_auxiliar = open(os.path.join(basic_path, "estructura_auxiliar.txt"), 'rt',
+                                   encoding='latin-1').read()[:-1].split(";")
         inicio = 0
         fin = len(estructura_auxiliar)
         medio = int((inicio + fin) / 2)
@@ -296,15 +304,15 @@ class Indice:
         block_storage.close()
         if posicion == -1:
             return set()
-        postrings_list = open(os.path.join(basic_path, "postings_list.txt"), 'rt' , encoding='latin-1')
+        postrings_list = open(os.path.join(basic_path, "postings_list.txt"), 'rt', encoding='latin-1')
         indice = int(estructura_auxiliar[medio].split("-")[1].split(",")[posicion])
         apariciones = self.leer_apariciones(postrings_list, indice)
         postrings_list.close()
         resultado = set()
-        #Esto obtiene del segundo numero el cual contenia seccion y descripcion/titulo, la seccion
+        # Esto obtiene del segundo numero el cual contenia seccion y descripcion/titulo, la seccion
         for post in apariciones:
             norm = post[0]
-            norm += str(int((int(post[1])/2)) + 1)
+            norm += str(int((int(post[1]) / 2)) + 1)
             norm += post[2:]
             resultado.add(norm)
         return resultado
@@ -330,6 +338,34 @@ class Indice:
             palabra = block_storage.read(int(longitud_palabra))
             indice_palabra += len(palabra)
         return palabra, indice_palabra
+
+    def sumar_noticia_al_dic(self, fecha, lugar):
+        """
+        Añade al diccionario temporal de cantidades en la fecha indicada se guarda medio seccion mes dia hora,
+        en numeros y sin espacios
+        Aviso : Si se llama desde fuera de formar indice el atributo diccionario_cantidad no estara inicializado
+        :param fecha: string con la fecha de la noticia
+        :param lugar: string con medio seccion con la convencion de INDICE
+        Las condiciones estan ordenados en base a que fecha esta presente en la mayor cantidad de noticias
+        """
+
+        if re.match(r"\w{3}, \d\d \w{3} \d{4} \d\d:\d\d:\d\d [+-]\d{4}", fecha):
+            # Ejemplo : Tue, 25 Oct 2016 16:32:00 -0300
+            fecha = self.mes_en_letras_a_numero(fecha[8:11]) + fecha[5:7] + fecha[17:19]
+        elif re.match(r"\d{4}-\d\d-\d\d \d\d:\d\d:\d\d\.\d{6}", fecha):
+            # Ejemplo : 2016-11-13 15:21:23.233796
+            fecha = fecha[5:7] + fecha[8:10] + fecha[11:13]
+        elif re.match(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?[+-]\d\d:\d\d", fecha):
+            # Ejemplo : 2016-11-13T17:02:00-03:00
+            fecha = fecha[5:7] + fecha[8:10] + fecha[11:13]
+        else:
+            print(fecha)
+        self.diccionario_cantidad.setdefault(lugar + fecha, 0)
+        self.diccionario_cantidad[lugar + fecha] += 1
+
+    def mes_en_letras_a_numero(self, mes):
+        diccionario_meses = {"Oct": "10", "Nov": "11", "Dec": "12"}
+        return diccionario_meses[mes]
 
     def leer_apariciones(self, postings_list, indice):
         """
@@ -373,8 +409,7 @@ class Indice:
 
 # Test creacion-actualizacion indice
 if __name__ == '__main__':
-    #Indice().formar_indice()
-    #Indice().descomprimir_indice()
-    #print(Indice().obtener_apariciones("econom"))
-    #print (Indice().normalizar_string(" casa  asdfwefc"))
-    pass
+    Indice().formar_indice()
+    # Indice().descomprimir_indice()
+    # print(Indice().obtener_apariciones("econom"))
+    # print (Indice().normalizar_string(" casa  asdfwefc"))
