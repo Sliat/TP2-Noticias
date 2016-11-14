@@ -57,6 +57,7 @@ class Indice:
 
     def formar_indice(self):
         """Actualiza el indice, en caso de que no exista lo crea"""
+        print("Inicializando indice, espere un momento")
         try:
             diccionario = json.load(open(os.path.join(self._BASIC_PATH, "Dic.json")))
         except:
@@ -77,11 +78,7 @@ class Indice:
             spimi = os.path.join(self._BASIC_PATH, 'spimi' + self._INDICE_MEDIOS[medio] + '.txt')
             self.actualizar_ranking(medio, spimi)
             os.remove(spimi)
-
-        # Guardamos el ranking solo una vez cuando termino de procesar los spimi
-        json.dump(self.diccionario_cantidad,
-                  open(os.path.abspath(os.path.join(self._BASIC_PATH, "cantidad.json")), "w"))
-        self.__delattr__("diccionario_cantidad")
+        self.guardar_cantidades()
         self.ranking.guardar_rankings()
 
     def spimi(self, diccionario):
@@ -363,6 +360,20 @@ class Indice:
         self.diccionario_cantidad.setdefault(lugar + fecha, 0)
         self.diccionario_cantidad[lugar + fecha] += 1
 
+    def guardar_cantidades(self):
+        #Si ya existia un diccionario de cantidades hace el merge
+        try:
+            dic_previo = json.load(open(os.path.abspath(os.path.join(self._BASIC_PATH, "cantidad.json")), "r"))
+            for key in self.diccionario_cantidad:
+                dic_previo.setdefault(key, 0)
+                dic_previo[key] += self.diccionario_cantidad[key]
+            self.diccionario_cantidad = dic_previo
+        except:
+            pass
+        json.dump(self.diccionario_cantidad,
+                  open(os.path.abspath(os.path.join(self._BASIC_PATH, "cantidad.json")), "w"))
+        self.__delattr__("diccionario_cantidad")
+
     def mes_en_letras_a_numero(self, mes):
         diccionario_meses = {"Oct": "10", "Nov": "11", "Dec": "12"}
         return diccionario_meses[mes]
@@ -404,8 +415,13 @@ class Indice:
 
     def obtener_todos_docs(self):
         """Devuelve un SET con todos los docs"""
-        pass
-
+        dic = json.load(open(os.path.abspath(os.path.join(self._BASIC_PATH, "dic.json")), "r"))
+        docs = set()
+        for medio in dic:
+            for seccion in dic[medio]:
+                for noticia in range (1, dic[medio][seccion] + 1):
+                    docs.add(int(medio+seccion + str(noticia).zfill(3)))
+        return docs
 
 # Test creacion-actualizacion indice
 if __name__ == '__main__':
@@ -413,3 +429,4 @@ if __name__ == '__main__':
     # Indice().descomprimir_indice()
     # print(Indice().obtener_apariciones("econom"))
     # print (Indice().normalizar_string(" casa  asdfwefc"))
+    # print(Indice().obtener_todos_docs())

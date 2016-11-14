@@ -1,5 +1,6 @@
 import functools
 import time
+import json
 import os
 from lxml import etree
 import modelos.Indice
@@ -8,6 +9,7 @@ from librerias.CronTab import CronTab
 from librerias.Evento import Evento
 from modelos.Medio import Medio
 from modelos.Ranking import Ranking
+import operator
 
 
 class RecortesDeNoticias(object):
@@ -53,7 +55,81 @@ class RecortesDeNoticias(object):
             puesto += 1
 
     def cantidad(self, intervalo, lugar):
-        pass
+        """
+        :param intervalo: tupla inicio, fin en formato (MM,DD,HH)
+        :param lugar: tupla con medio y categoria
+        :return:
+        """
+        lugares = self.calcular_lugares(lugar)
+        cantidades = json.load(
+            open(os.path.abspath(os.path.join(modelos.Indice.Indice()._BASIC_PATH, "cantidad.json")), "r"))
+        total = 0
+        for lugar in lugares:
+            total += self.sumar_cantidad_noticias(intervalo, lugar, cantidades)
+        print("Hay " + str(total) + " noticias en el intervalo especificado")
+
+    def ranking_categorias(self, intervalo):
+        categorias = {}
+        cantidades = json.load(
+            open(os.path.abspath(os.path.join(modelos.Indice.Indice()._BASIC_PATH, "cantidad.json")), "r"))
+        for seccion in range(1, 6):
+            categorias[seccion] = 0
+            for medio in range(1, 6):
+                categorias[seccion] += self.sumar_cantidad_noticias(intervalo, (medio, seccion), cantidades)
+        categorias = sorted(categorias.items(), key=operator.itemgetter(1))
+        for i in range(4, -1, -1):
+            print("Posicion " + str((i * -1) + 5) + ": " + modelos.Indice.Indice()._INDICE_SECCION[str(
+                categorias[i][0])] + " con " + str(categorias[i][1]) + " notcias")
+
+    def calcular_lugares(self, lugar):
+        """Si se elijieron multiples lugares genera la lista con todos los indices"""
+        if (lugar[0] != 0 and lugar[1] != 0):
+            return [lugar]
+        resultado = []
+        if (lugar[0] != 0):
+            medio = lugar[0]
+            for i in range(1, 6):
+                resultado.append((medio, i))
+        elif (lugar[1] != 0):
+            seccion = lugar[1]
+            for i in range(1, 6):
+                resultado.append((i, seccion))
+        else:
+            for i in range(1, 6):
+                for j in range(1, 6):
+                    resultado.append((i, j))
+        return resultado
+
+    def sumar_cantidad_noticias(self, intervalo, lugar, cantidades):
+        total = 0
+        total += self.contar_noticias((intervalo[0][0] + 1, intervalo[1][0]), (1, 32),
+                                      (intervalo[0][2], intervalo[1][2] + 1), lugar, cantidades)
+        if (intervalo[0][0] == intervalo[1][0]):
+            total += self.contar_noticias((intervalo[0][0], intervalo[0][0] + 1), (intervalo[0][1], intervalo[1][1]),
+                                          (intervalo[0][2], intervalo[1][2] + 1), lugar, cantidades)
+        else:
+            total += self.contar_noticias((intervalo[0][0], intervalo[0][0] + 1), (intervalo[0][1], 32),
+                                          (intervalo[0][2], intervalo[1][2] + 1), lugar, cantidades)
+            total += self.contar_noticias((intervalo[1][0], intervalo[1][0] + 1), (1, intervalo[1][1]),
+                                          (intervalo[0][2], intervalo[1][2] + 1), lugar, cantidades)
+        return total
+
+    def contar_noticias(self, meses, dias, horas, lugar, cantidades):
+        """
+        :param meses: tupla inicio, fin en formato MM
+        :param dias: tupla inicio, fin en formato MM
+        :param horas: tupla inicio, fin en formato MM
+        :param lugar: tupla con medio y categoria
+        :param dic: diccionario de cantidades
+        :return: int con la cantidad de noticias
+        """
+        total = 0
+        for mes in range(meses[0], meses[1]):
+            for dia in range(dias[0], dias[1]):
+                for hora in range(horas[0], horas[1]):
+                    fecha = str(mes).zfill(2) + str(dia).zfill(2) + str(hora).zfill(2)
+                    total += cantidades.get((str(lugar[0]) + str(lugar[1]) + fecha), 0)
+        return total
 
     def booleana(self, consulta):
         """
